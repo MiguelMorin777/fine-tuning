@@ -206,8 +206,7 @@
     <a-camera wasd-controls="acceleration: 22" look-controls="pointerLockEnabled: false"></a-camera>
   </a-entity>
 
-  <a-text value="LE REGLAGE FIN DE L'UNIVERS" align="center" position="0 5.8 0" width="15" color="#dde3f5" billboard></a-text>
-  <a-text value="7 constantes - 1 argument - 5 objections" align="center" position="0 5.3 0" width="7.5" color="#8b94b8" billboard></a-text>
+  <a-entity id="mainTitle" position="0 5.7 0" billboard></a-entity>
 </a-scene>
 
 <script>
@@ -382,7 +381,8 @@ const fmtSigne = v => (v > 0 ? '+' + v : '' + v);
 
 const STATIONS = [
 {
-  id:'lambda', couleur:'#7c4dff', label3d:'CONSTANTE\nCOSMOLOGIQUE', num3d:'1 sur 10^120', tag3d:'l energie du vide',
+  id:'lambda', couleur:'#7c4dff', titreCourt:'Constante cosmologique', tag3d:'l\'énergie du vide',
+  numParts:[{t:'1 sur 10'},{t:'120',s:1}],
   titre:'La constante cosmologique (Λ)', bignum:'1 chance sur 10<sup>120</sup>',
   corps:`
    <p><b>Ce que c'est.</b> Λ est l'énergie du vide, le « ressort » qui accélère l'expansion de
@@ -403,7 +403,8 @@ const STATIONS = [
   sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » ; J. De Vuyst, <i>A Natural Introduction to Fine-Tuning</i> (arXiv:2012.05617).'
 },
 {
-  id:'entropie', couleur:'#ff6b9d', label3d:'ENTROPIE\nINITIALE', num3d:'1 sur 10^(10^123)', tag3d:'l ordre du Big Bang',
+  id:'entropie', couleur:'#ff6b9d', titreCourt:'Entropie initiale', tag3d:'l\'ordre du Big Bang',
+  numParts:[{t:'1 sur 10'},{t:'10',s:1},{t:'123',s:2}],
   titre:'L\'entropie initiale de l\'Univers', bignum:'1 chance sur 10<sup>10<sup>123</sup></sup>',
   corps:`
    <p><b>Ce que c'est.</b> Pour qu'un univers développe des structures (galaxies, étoiles, planètes),
@@ -422,7 +423,8 @@ const STATIONS = [
   sources:'R. Penrose, <i>The Emperor\'s New Mind</i> (1989) ; repris dans la littérature du fine-tuning (Barnes, SEP).'
 },
 {
-  id:'forte', couleur:'#ffa94d', label3d:'FORCE\nNUCLEAIRE FORTE', num3d:'± 0,5 %', tag3d:'la colle des noyaux',
+  id:'forte', couleur:'#ffa94d', titreCourt:'Force nucléaire forte', tag3d:'la colle des noyaux',
+  numParts:[{t:'± 0,5 %'}],
   titre:'La force nucléaire forte', bignum:'± 0,5 %',
   corps:`
    <p><b>Ce que c'est.</b> La force qui soude protons et neutrons dans les noyaux atomiques — et qui
@@ -443,7 +445,8 @@ const STATIONS = [
   sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » (§ nucléosynthèse) ; F. Hoyle (1953) ; L. Barnes, <i>The Fine-Tuning of the Universe for Intelligent Life</i> (2012).'
 },
 {
-  id:'higgs', couleur:'#4dd0ff', label3d:'MASSE\nDU HIGGS', num3d:'34 decimales', tag3d:'l origine des masses',
+  id:'higgs', couleur:'#4dd0ff', titreCourt:'Masse du Higgs', tag3d:'l\'origine des masses',
+  numParts:[{t:'34 décimales'}],
   titre:'La masse du boson de Higgs', bignum:'annulation à 34 décimales près',
   corps:`
    <p><b>Ce que c'est.</b> Le champ de Higgs donne leur masse aux particules élémentaires. Sa valeur
@@ -463,7 +466,8 @@ const STATIONS = [
   sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » ; J. De Vuyst, arXiv:2012.05617 (problème de la hiérarchie).'
 },
 {
-  id:'gravite', couleur:'#69db7c', label3d:'GRAVITE', num3d:'1 sur 10^36', tag3d:'l architecte des etoiles',
+  id:'gravite', couleur:'#69db7c', titreCourt:'Gravité', tag3d:'l\'architecte des étoiles',
+  numParts:[{t:'1 sur 10'},{t:'36',s:1}],
   titre:'La gravité face aux autres forces', bignum:'rapport de 10<sup>36</sup>',
   corps:`
    <p><b>Ce que c'est.</b> La gravité est ~10<sup>36</sup> fois plus faible que la force
@@ -482,7 +486,8 @@ const STATIONS = [
   sources:'M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
 },
 {
-  id:'grumeaux', couleur:'#b197fc', label3d:'GRUMEAUX\nPRIMORDIAUX', num3d:'Q = 2 x 10^-5', tag3d:'les graines des galaxies',
+  id:'grumeaux', couleur:'#b197fc', titreCourt:'Grumeaux primordiaux', tag3d:'les graines des galaxies',
+  numParts:[{t:'Q = 2×10'},{t:'−5',s:1}],
   titre:'Les fluctuations primordiales (Q)', bignum:'Q ≈ 2 × 10<sup>-5</sup>',
   corps:`
    <p><b>Ce que c'est.</b> L'univers primordial n'était pas parfaitement lisse : il portait
@@ -501,7 +506,8 @@ const STATIONS = [
   sources:'M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning » (densité et fluctuations).'
 },
 {
-  id:'quarks', couleur:'#63e6be', label3d:'QUARKS\n& ATOMES', num3d:'quelques %', tag3d:'la matiere stable',
+  id:'quarks', couleur:'#63e6be', titreCourt:'Quarks & atomes', tag3d:'la matière stable',
+  numParts:[{t:'quelques %'}],
   titre:'Masses des quarks et de l\'électron', bignum:'quelques % de marge',
   corps:`
    <p><b>Ce que c'est.</b> Protons et neutrons sont faits de quarks <i>up</i> et <i>down</i>. La
@@ -522,7 +528,8 @@ const STATIONS = [
 },
 /* ---------- stations philosophiques ---------- */
 {
-  id:'argument', phi:true, couleur:'#ffd166', label3d:'L ARGUMENT', num3d:'p < 10^-136', tag3d:'la formulation bayesienne',
+  id:'argument', phi:true, couleur:'#ffd166', titreCourt:'L\'argument', tag3d:'la formulation bayésienne',
+  numParts:[{t:'p < 10'},{t:'−136',s:1}],
   titre:'L\'argument : formulation bayésienne', bignum:'P(vie | hasard) ≲ 10<sup>-136</sup>',
   corps:`
    <p>Le philosophe-astrophysicien <b>Luke Barnes</b> (« A Reasonable Little Question », <i>Ergo</i>
@@ -552,7 +559,8 @@ const STATIONS = [
   sources:'L. Barnes, « A Reasonable Little Question: A Formulation of the Fine-Tuning Argument », <i>Ergo</i> 6 (2019) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
 },
 {
-  id:'objections', phi:true, couleur:'#ffd166', label3d:'OBJECTIONS\n& REPONSES', num3d:'5 debats', tag3d:'l autre cote de la balance',
+  id:'objections', phi:true, couleur:'#ffd166', titreCourt:'Objections & réponses', tag3d:'l\'autre côté de la balance',
+  numParts:[{t:'5 débats'}],
   titre:'Les objections — et leurs réponses', bignum:'5 débats classiques',
   corps:`
    <details open><summary>1 · Le multivers</summary><div class="body">
@@ -656,6 +664,143 @@ const SOURCES_INFO = {
 };
 
 /* =============================================================
+   Textures canvas des stations (panneaux, anneaux, titre)
+============================================================= */
+const texUpdaters = [];
+function onLoaded(el, fn) { if (el.hasLoaded) fn(); else el.addEventListener('loaded', fn, { once: true }); }
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+/* texte avec exposants ({t, s:0|1|2}) */
+function drawParts(c, parts, cx, cy) {
+  const fonts = { 0:'700 78px "Space Grotesk","Inter",sans-serif', 1:'700 44px "Space Grotesk","Inter",sans-serif', 2:'700 32px "Space Grotesk","Inter",sans-serif' };
+  const rise  = { 0:0, 1:32, 2:52 };
+  let tot = 0;
+  const seg = parts.map(p => { c.font = fonts[p.s || 0]; const w = c.measureText(p.t).width; tot += w; return w; });
+  let x = cx - tot / 2;
+  c.textAlign = 'left';
+  parts.forEach((p, j) => { c.font = fonts[p.s || 0]; c.fillText(p.t, x, cy - rise[p.s || 0]); x += seg[j]; });
+  c.textAlign = 'center';
+}
+function drawPanelCanvas(cv, s, idx) {
+  const c = cv.getContext('2d'), W = cv.width, H = cv.height, A = s.couleur;
+  c.clearRect(0, 0, W, H);
+  c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  /* fond verre */
+  roundRect(c, 6, 6, W - 12, H - 12, 26);
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(11,16,40,.97)'); g.addColorStop(.5, 'rgba(7,10,26,.94)'); g.addColorStop(1, 'rgba(13,19,48,.97)');
+  c.fillStyle = g; c.fill();
+  c.strokeStyle = A; c.globalAlpha = .5; c.lineWidth = 2; c.stroke(); c.globalAlpha = 1;
+  /* coins lumineux */
+  c.lineWidth = 5; c.strokeStyle = A; c.globalAlpha = .95;
+  const L = 34;
+  [[12,12,1,1],[W-12,12,-1,1],[12,H-12,1,-1],[W-12,H-12,-1,-1]].forEach(([x,y,dx,dy]) => {
+    c.beginPath(); c.moveTo(x, y + dy*L); c.lineTo(x, y); c.lineTo(x + dx*L, y); c.stroke();
+  });
+  c.globalAlpha = 1;
+  /* index + categorie */
+  c.letterSpacing = '3px';
+  c.font = '600 21px "Inter",sans-serif'; c.fillStyle = 'rgba(160,170,205,.8)';
+  c.textAlign = 'left';  c.fillText(('' + (idx + 1)).padStart(2, '0'), 44, 54);
+  c.textAlign = 'right'; c.font = '500 16px "Inter",sans-serif';
+  c.fillText(s.phi ? 'PHILOSOPHIE' : 'CONSTANTE', W - 44, 54);
+  /* titre */
+  c.textAlign = 'center'; c.letterSpacing = '4px';
+  c.fillStyle = '#eef2ff'; c.font = '700 38px "Space Grotesk","Inter",sans-serif';
+  c.fillText(s.titreCourt.toUpperCase(), W / 2, 118);
+  c.fillStyle = A; c.fillRect(W / 2 - 40, 134, 80, 3);
+  /* grand nombre */
+  c.letterSpacing = '0px';
+  c.shadowColor = A; c.shadowBlur = 26; c.fillStyle = A;
+  drawParts(c, s.numParts, W / 2, 238);
+  c.shadowBlur = 0;
+  /* tagline */
+  c.letterSpacing = '1px';
+  c.fillStyle = 'rgba(152,162,200,.95)'; c.font = '400 25px "Inter",sans-serif';
+  c.fillText(s.tag3d, W / 2, 292);
+  /* jauge (constantes) ou motif (philosophie) */
+  if (!s.phi) {
+    const gx = 134, gw = 500, gy = 330, gh = 13;
+    roundRect(c, gx, gy, gw, gh, 6);
+    const gg = c.createLinearGradient(gx, 0, gx + gw, 0);
+    gg.addColorStop(0, '#4a1220'); gg.addColorStop(.5, '#7a1d30'); gg.addColorStop(1, '#4a1220');
+    c.fillStyle = gg; c.fill();
+    c.strokeStyle = 'rgba(255,120,140,.35)'; c.lineWidth = 1; c.stroke();
+    c.shadowColor = '#2ee6a8'; c.shadowBlur = 12; c.fillStyle = '#2ee6a8';
+    c.fillRect(gx + gw / 2 - 2, gy - 3, 4, gh + 6); c.shadowBlur = 0;
+    c.fillStyle = 'rgba(150,160,195,.85)'; c.font = 'italic 400 19px "Inter",sans-serif';
+    c.fillText('zone compatible avec la vie : invisible à l\'échelle réelle', W / 2, 384);
+  } else {
+    c.strokeStyle = A; c.globalAlpha = .6; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(W/2 - 140, 352); c.lineTo(W/2 - 16, 352);
+    c.moveTo(W/2 + 16, 352); c.lineTo(W/2 + 140, 352); c.stroke();
+    c.globalAlpha = 1; c.fillStyle = A;
+    c.save(); c.translate(W/2, 352); c.rotate(Math.PI/4); c.fillRect(-6, -6, 12, 12); c.restore();
+  }
+  /* invite */
+  c.fillStyle = A; c.font = '600 20px "Inter",sans-serif';
+  c.fillText('—  cliquer pour explorer  —', W / 2, 442);
+  /* scanlines */
+  c.globalAlpha = .045; c.fillStyle = '#9fb2ff';
+  for (let y = 14; y < H - 14; y += 4) c.fillRect(14, y, W - 28, 1);
+  c.globalAlpha = 1; c.letterSpacing = '0px';
+}
+function makePanelTexture(s, idx) {
+  const cv = document.createElement('canvas'); cv.width = 768; cv.height = 480;
+  drawPanelCanvas(cv, s, idx);
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 8;
+  texUpdaters.push(() => { drawPanelCanvas(cv, s, idx); tex.needsUpdate = true; });
+  return tex;
+}
+function makeRingTexture(accent) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  const c = cv.getContext('2d'), ctr = 256;
+  c.strokeStyle = accent;
+  for (let i = 0; i < 72; i++) {
+    const a = i * Math.PI / 36, long = i % 6 === 0;
+    c.globalAlpha = long ? .9 : .4; c.lineWidth = long ? 4 : 2;
+    const r1 = long ? 196 : 206;
+    c.beginPath(); c.moveTo(ctr + Math.cos(a) * r1, ctr + Math.sin(a) * r1);
+    c.lineTo(ctr + Math.cos(a) * 222, ctr + Math.sin(a) * 222); c.stroke();
+  }
+  c.globalAlpha = .8; c.lineWidth = 3; c.setLineDash([26, 14]);
+  c.beginPath(); c.arc(ctr, ctr, 238, 0, 6.29); c.stroke();
+  c.setLineDash([]); c.globalAlpha = .45; c.lineWidth = 2;
+  c.beginPath(); c.arc(ctr, ctr, 180, 0, 6.29); c.stroke();
+  c.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 8;
+  return tex;
+}
+function drawTitleCanvas(cv) {
+  const c = cv.getContext('2d'), W = cv.width, H = cv.height;
+  c.clearRect(0, 0, W, H);
+  c.textAlign = 'center'; c.letterSpacing = '9px';
+  const grad = c.createLinearGradient(W * .18, 0, W * .82, 0);
+  grad.addColorStop(0, '#2ee6a8'); grad.addColorStop(.5, '#7fb2ff'); grad.addColorStop(1, '#b197fc');
+  c.font = '700 62px "Space Grotesk","Inter",sans-serif';
+  c.shadowColor = 'rgba(110,140,255,.85)'; c.shadowBlur = 30;
+  c.fillStyle = grad;
+  c.fillText('LE RÉGLAGE FIN DE L\'UNIVERS', W / 2, 140);
+  c.shadowBlur = 0;
+  c.letterSpacing = '5px';
+  c.font = '500 23px "Inter",sans-serif'; c.fillStyle = 'rgba(152,162,200,.95)';
+  c.fillText('7 CONSTANTES  ·  1 ARGUMENT  ·  5 OBJECTIONS', W / 2, 205);
+  c.letterSpacing = '0px';
+}
+function makeTitleTexture() {
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 256;
+  drawTitleCanvas(cv);
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 8;
+  texUpdaters.push(() => { drawTitleCanvas(cv); tex.needsUpdate = true; });
+  return tex;
+}
+/* redessine toutes les textures quand les polices web sont chargees */
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => texUpdaters.forEach(f => f()));
+
+/* =============================================================
    Construction des stations 3D
 ============================================================= */
 const holder = document.getElementById('stations');
@@ -673,37 +818,48 @@ STATIONS.forEach((s, i) => {
   const dur = 2800 + (i % 4) * 350;
   st.innerHTML = `
     <a-ring rotation="-90 0 0" position="0 0.02 0" radius-inner="0.9" radius-outer="1.0"
-            color="${accent}" material="emissive:${accent}; emissiveIntensity:.6; opacity:.75; transparent:true"
+            color="${accent}" material="emissive:${accent}; emissiveIntensity:.6; opacity:.5; transparent:true"
             animation="property: scale; from: 1 1 1; to: 1.1 1.1 1.1; dir: alternate; dur: ${dur}; loop: true; easing: easeInOutSine"></a-ring>
+    <a-entity class="techring" position="0 0.035 0" rotation="-90 0 0"
+              animation="property: rotation; from: -90 0 0; to: -90 0 360; dur: 60000; easing: linear; loop: true"></a-entity>
     <a-box width="0.04" height="0.006" depth="3.6" position="0 0.012 2.8" color="${accent}"
            material="emissive:${accent}; emissiveIntensity:.5; opacity:.28; transparent:true"></a-box>
-    <a-cylinder radius="0.46" height="0.1" position="0 0.05 0" color="#0d1226" material="metalness:.7; roughness:.3"></a-cylinder>
-    <a-cylinder radius="0.2" height="0.85" position="0 0.55 0" color="#141b38" material="metalness:.8; roughness:.25"></a-cylinder>
-    <a-cylinder radius="0.3" height="0.05" position="0 1.0 0" color="${accent}"
-                material="emissive:${accent}; emissiveIntensity:.7; metalness:.4; roughness:.4"></a-cylinder>
-    <a-cylinder radius="0.6" height="1.1" position="0 0.55 0"
-                material="shader: flat; color: ${accent}; opacity: .06; transparent: true; side: double; depthWrite: false"></a-cylinder>
-    <a-entity animation="property: position; from: 0 0 0; to: 0 0.09 0; dir: alternate; dur: ${dur + 400}; loop: true; easing: easeInOutSine">
-      <a-plane width="2.58" height="1.7" position="0 2.05 -0.012" color="${accent}"
-               material="emissive:${accent}; emissiveIntensity:.45; opacity:.45; transparent:true; side:double"></a-plane>
-      <a-plane width="2.5" height="1.62" position="0 2.05 0" color="#080d20"
-               material="opacity:.94; transparent:true; side:double"></a-plane>
-      <a-box width="2.5" height="0.025" depth="0.015" position="0 2.88 0.01" color="${accent}"
-             material="emissive:${accent}; emissiveIntensity:.9"></a-box>
-      <a-text value="${s.label3d}" align="center" position="0 2.52 0.01" width="4.6" color="#ffffff"></a-text>
-      <a-text value="${s.num3d}"  align="center" position="0 2.02 0.01" width="6.2" color="${accent}"></a-text>
-      <a-text value="${s.tag3d}"  align="center" position="0 1.66 0.01" width="3.4" color="#8b94b8"></a-text>
-      ${s.phi ? '' : `
-      <a-box width="1.7" height="0.055" depth="0.02" position="0 1.42 0.02" color="#7a1d30"></a-box>
-      <a-box width="0.012" height="0.10" depth="0.03" position="0 1.42 0.03" color="#2ee6a8"
-             material="emissive:#2ee6a8; emissiveIntensity:1"></a-box>
-      <a-text value="zone vitale (echelle reelle : invisible)" align="center" position="0 1.24 0.02"
-              width="2.6" color="#8b94b8"></a-text>`}
+    <a-cylinder radius="0.5" height="0.07" position="0 0.035 0" color="#1b2444" material="metalness:.4; roughness:.5"></a-cylinder>
+    <a-cylinder radius="0.42" height="0.09" position="0 0.115 0" color="#0d1226" material="metalness:.4; roughness:.45"></a-cylinder>
+    <a-cone radius-bottom="0.3" radius-top="0.17" height="0.8" position="0 0.56 0" color="#26305a"
+            material="metalness:.45; roughness:.4"></a-cone>
+    <a-cylinder radius="0.19" height="0.05" position="0 0.99 0" color="${accent}"
+                material="emissive:${accent}; emissiveIntensity:.9"></a-cylinder>
+    <a-cone class="holobeam" radius-bottom="0.15" radius-top="1.18" height="1.02" position="0 1.53 0" open-ended="true"
+            material="shader: flat; color: ${accent}; opacity: .055; transparent: true; side: double; depthWrite: false"
+            animation="property: material.opacity; from: .04; to: .085; dir: alternate; dur: ${2000 + i * 180}; loop: true; easing: easeInOutSine"></a-cone>
+    <a-entity class="holo" animation="property: position; from: 0 0 0; to: 0 0.09 0; dir: alternate; dur: ${dur + 400}; loop: true; easing: easeInOutSine">
+      <a-plane width="2.66" height="1.74" position="0 2.05 -0.02" color="${accent}"
+               material="emissive:${accent}; emissiveIntensity:.4; opacity:.18; transparent:true; side:double"></a-plane>
     </a-entity>
     <a-cylinder class="clickable" radius="1.25" height="3.4" position="0 1.7 0"
                 material="opacity:0; transparent:true" data-id="${s.id}"></a-cylinder>
   `;
   holder.appendChild(st);
+
+  /* panneau holographique : texture canvas haute definition */
+  const panelEnt = document.createElement('a-entity');
+  panelEnt.setAttribute('position', '0 2.05 0');
+  st.querySelector('.holo').appendChild(panelEnt);
+  const panelTex = makePanelTexture(s, i);
+  onLoaded(panelEnt, () => {
+    panelEnt.setObject3D('mesh', new THREE.Mesh(
+      new THREE.PlaneGeometry(2.5, 1.5625),
+      new THREE.MeshBasicMaterial({ map: panelTex, transparent: true, side: THREE.DoubleSide })));
+  });
+  /* anneau technique gradue, en rotation lente */
+  const ringEnt = st.querySelector('.techring');
+  onLoaded(ringEnt, () => {
+    ringEnt.setObject3D('mesh', new THREE.Mesh(
+      new THREE.CircleGeometry(1.18, 48),
+      new THREE.MeshBasicMaterial({ map: makeRingTexture(accent), transparent: true, opacity: .85,
+                                    side: THREE.DoubleSide, depthWrite: false })));
+  });
 
   const hit = st.querySelector('.clickable');
   const ringEl = st.querySelector('a-ring');
@@ -741,8 +897,7 @@ function mkChip(id, label, dotColor, onclick, phi) {
 }
 mkChip('univers', 'Notre Univers', '#2ee6a8', () => openStation('univers'));
 STATIONS.forEach(s => {
-  const label = s.label3d.replace('\n', ' ').toLowerCase().replace(/(^| )\w/g, c => c.toUpperCase());
-  mkChip(s.id, label, s.couleur, () => openStation(s.id), s.phi);
+  mkChip(s.id, s.titreCourt, s.couleur, () => openStation(s.id), s.phi);
 });
 mkChip('sources', 'Références', '#7fb2ff', () => openStation('sources'));
 mkChip(null, '♪ Son : on', null, audioToggle).id = 'audioChip';
@@ -924,6 +1079,12 @@ function openStation(id) {
   overlay.style.display = 'flex';
   modal.scrollTop = 0;
 
+  /* accordeon exclusif : ouvrir une objection ferme les autres */
+  const dets = modal.querySelectorAll('details');
+  dets.forEach(d => d.querySelector('summary').addEventListener('click', () => {
+    dets.forEach(o => { if (o !== d) o.open = false; });
+  }));
+
   if (s.slider) {
     simInit(document.getElementById('sim'));
     const dial = document.getElementById('dial');
@@ -967,6 +1128,15 @@ function closeStation() {
     if (lc && lc.pitchObject) lc.pitchObject.rotation.x = 16 * Math.PI / 180;
   };
   if (scene.hasLoaded) apply(); else scene.addEventListener('loaded', apply);
+})();
+
+/* Titre principal en texture canvas */
+(function mainTitle() {
+  const t = document.getElementById('mainTitle');
+  const tex = makeTitleTexture();
+  onLoaded(t, () => t.setObject3D('mesh', new THREE.Mesh(
+    new THREE.PlaneGeometry(11, 2.75),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false }))));
 })();
 
 /* Entree + ecran de chargement */
