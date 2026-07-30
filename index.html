@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Le Réglage Fin de l'Univers — argument interactif</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<style>
+  :root{
+    --bg:#05060f; --panel:#0b1022ee; --border:#26304f;
+    --txt:#dde3f5; --dim:#8b94b8; --green:#2ee6a8; --red:#ff5470; --gold:#ffd166;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",system-ui,sans-serif;color:var(--txt);}
+  a{color:#7fb2ff;}
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;
+       justify-content:center;padding:10px 8px;background:linear-gradient(0deg,#05060fd9,transparent);}
+  .chip{border:1px solid var(--border);background:#0b1022cc;color:var(--txt);border-radius:999px;
+        padding:6px 12px;font-size:12.5px;cursor:pointer;transition:.15s;}
+  .chip:hover{border-color:#5f74ff;transform:translateY(-2px);}
+  .chip.phi{border-color:#a8842f;color:var(--gold);}
+  #hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:15;font-size:12.5px;
+        color:var(--dim);background:#0b1022aa;border:1px solid var(--border);border-radius:8px;padding:5px 12px;}
+  /* ---------- Overlays ---------- */
+  .overlay{position:fixed;inset:0;z-index:30;background:#020308c9;display:flex;align-items:center;
+           justify-content:center;padding:18px;backdrop-filter:blur(4px);}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:760px;
+         width:100%;max-height:88vh;overflow-y:auto;padding:28px 30px;box-shadow:0 20px 80px #000c;position:relative;}
+  .modal h2{margin:0 0 4px;font-size:24px;letter-spacing:.3px;}
+  .modal h3{margin:20px 0 8px;font-size:15px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;}
+  .modal p{line-height:1.6;margin:8px 0;}
+  .modal ul{margin:8px 0;padding-left:20px;line-height:1.65;}
+  .modal li{margin:4px 0;}
+  .bignum{font-size:34px;font-weight:700;margin:6px 0 2px;}
+  .close{position:absolute;top:14px;right:16px;border:none;background:#1a2140;color:var(--txt);
+         width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;}
+  .close:hover{background:#2a3466;}
+  .src{font-size:12px;color:var(--dim);border-top:1px solid var(--border);margin-top:22px;padding-top:10px;line-height:1.7;}
+  .tag{display:inline-block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);}
+  /* ---------- Slider experiment ---------- */
+  .lab{background:#070b1a;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:14px 0;}
+  .lab input[type=range]{width:100%;accent-color:#5f74ff;cursor:pointer;}
+  .labrow{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:2px;}
+  #verdict{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14.5px;line-height:1.5;
+           border:1px solid;transition:.2s;}
+  #verdict.vie{border-color:var(--green);color:var(--green);background:#0a2a1f55;}
+  #verdict.mort{border-color:var(--red);color:#ffb3c0;background:#33101a66;}
+  .resetbtn{margin-top:10px;border:1px solid var(--border);background:#141b38;color:var(--txt);
+            border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px;}
+  .resetbtn:hover{background:#1e2750;}
+  /* ---------- Simulation d'univers ---------- */
+  #sim{width:100%;height:220px;display:block;border-radius:10px;background:#01030c;
+       border:1px solid #1a2140;margin-bottom:4px;}
+  .simcap{font-size:12px;color:var(--dim);margin:4px 0 12px;}
+  /* ---------- Accordion (objections) ---------- */
+  details{border:1px solid var(--border);border-radius:10px;margin:10px 0;background:#070b1a;}
+  summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;}
+  summary::before{content:"▸ ";color:var(--gold);}
+  details[open] summary::before{content:"▾ ";}
+  details .body{padding:0 16px 14px;line-height:1.6;font-size:14.5px;}
+  .obj{color:#ffb3c0;} .rep{color:var(--green);}
+  .bayes{font-family:Georgia,serif;font-size:19px;text-align:center;background:#070b1a;
+         border:1px solid var(--border);border-radius:12px;padding:16px;margin:14px 0;}
+  kbd{background:#1a2140;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<div id="hint">Glissez pour regarder · <kbd>W A S D</kbd>/flèches pour marcher · cliquez une station lumineuse</div>
+
+<div id="hud"></div>
+
+<!-- ============ INTRO ============ -->
+<div class="overlay" id="intro">
+  <div class="modal">
+    <span class="tag">Exploration interactive</span>
+    <h2 style="font-size:30px">L'Univers réglé au dixième de cheveu</h2>
+    <p>Depuis les années 1970, les physiciens ont découvert un fait troublant : si l'on modifiait,
+    même infimement, la valeur d'une poignée de constantes fondamentales — l'énergie du vide, la force
+    qui soude les noyaux, la masse des particules — l'Univers serait <b>stérile</b> : pas d'étoiles,
+    pas de chimie, pas d'observateurs. C'est le <b>réglage fin</b> (<i>fine-tuning</i>).</p>
+    <p>Imaginez un condamné devant un peloton de <b>cinquante tireurs d'élite</b>. Tous tirent… et tous
+    ratent. « Normal, dit-il, sinon je ne serais pas là pour m'en étonner. » Vraiment ? Ou bien
+    cet événement <i>crie</i> une explication ? C'est l'intuition au cœur de l'argument du réglage fin
+    en faveur de l'existence de Dieu — que vous allez pouvoir tester ici, objections comprises.</p>
+    <p style="color:var(--dim);font-size:14px">Explorez les <b>7 stations</b> de constantes : chacune
+    vous laisse <b>dérégler l'Univers vous-même</b> et en voir les conséquences. Puis visitez les deux
+    stations dorées : <b>l'argument</b> (formulation bayésienne) et <b>les objections</b> avec leurs réponses.
+    Cliquez aussi la <b>sphère centrale</b> pour la fiche de notre Univers.
+    La barre en bas de l'écran permet d'accéder directement à chaque station.</p>
+    <div style="text-align:center;margin-top:18px">
+      <button class="resetbtn" style="font-size:16px;padding:12px 28px;background:#2b3aa0;border-color:#4d5fe0"
+        onclick="document.getElementById('intro').style.display='none'">Entrer dans l'Univers →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STATION OVERLAY ============ -->
+<div class="overlay" id="panelOverlay" style="display:none">
+  <div class="modal" id="panelModal"></div>
+</div>
+
+<!-- ============ SCENE ============ -->
+<a-scene background="color: #05060f" fog="type: exponential; color: #060812; density: 0.03"
+         renderer="antialias: true; colorManagement: true" vr-mode-ui="enabled: true">
+  <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable; far: 60"></a-entity>
+
+  <a-entity nebula-sky animation="property: rotation; to: 0 360 0; dur: 480000; easing: linear; loop: true"></a-entity>
+  <a-entity id="stars" starfield animation="property: rotation; to: 0 -360 0; dur: 900000; easing: linear; loop: true"></a-entity>
+  <a-entity dust animation="property: rotation; to: 0 360 0; dur: 300000; easing: linear; loop: true"></a-entity>
+
+  <!-- sol -->
+  <a-circle rotation="-90 0 0" radius="16" color="#07091a" material="metalness:.55; roughness:.4"></a-circle>
+  <a-circle rotation="-90 0 0" position="0 0.004 0" radius="2.1" color="#0b1128"
+            material="emissive:#2a3a8f; emissiveIntensity:.22; opacity:.9; transparent:true"></a-circle>
+  <a-ring rotation="-90 0 0" position="0 0.01 0" radius-inner="6.8" radius-outer="6.88" color="#3a4a9f"
+          material="emissive:#3a4a9f; emissiveIntensity:.5; opacity:.8; transparent:true"></a-ring>
+  <a-ring rotation="-90 0 0" position="0 0.01 0" radius-inner="2.2" radius-outer="2.26" color="#2a3466"
+          material="emissive:#2a3466; emissiveIntensity:.5"></a-ring>
+  <a-ring rotation="-90 0 0" position="0 0.01 0" radius-inner="4.5" radius-outer="4.53" color="#1a2140"
+          material="emissive:#1a2140; emissiveIntensity:.4; opacity:.5; transparent:true"></a-ring>
+  <a-ring rotation="-90 0 0" position="0 0.01 0" radius-inner="15.4" radius-outer="15.5" color="#141b38"></a-ring>
+
+  <!-- coeur : l'Univers -->
+  <a-entity id="core" position="0 2.1 0">
+    <a-sphere id="coreSphere" class="clickable" radius="0.85" color="#bfeee2" universe-surface
+      material="emissive: #2ee6a8; emissiveIntensity: .5; metalness:.1; roughness:.5"
+      animation="property: scale; from: 1 1 1; to: 1.07 1.07 1.07; dur: 2600; dir: alternate; loop: true; easing: easeInOutSine"
+      animation__rot="property: rotation; to: 0 360 0; dur: 90000; easing: linear; loop: true"></a-sphere>
+    <a-entity core-swarm rotation="12 0 8"
+      animation="property: rotation; from: 12 0 8; to: 12 -360 8; dur: 45000; easing: linear; loop: true"></a-entity>
+    <a-sphere id="coreHalo1" radius="1.08" material="shader: flat; color: #2ee6a8; transparent: true; opacity: .12; side: double"
+      animation="property: scale; from: 1 1 1; to: 1.12 1.12 1.12; dur: 2600; dir: alternate; loop: true; easing: easeInOutSine"></a-sphere>
+    <a-sphere id="coreHalo2" radius="1.5" material="shader: flat; color: #2ee6a8; transparent: true; opacity: .05; side: double"></a-sphere>
+    <a-torus radius="1.25" radius-tubular="0.012" rotation="80 0 15" color="#5f74ff" material="emissive:#5f74ff; emissiveIntensity:.5"
+      animation="property: rotation; from: 80 0 15; to: 80 360 15; dur: 14000; easing: linear; loop: true"></a-torus>
+    <a-torus radius="1.55" radius-tubular="0.008" rotation="100 400 -20" color="#b197fc" material="emissive:#b197fc; emissiveIntensity:.45"
+      animation="property: rotation; from: 100 400 -20; to: 100 40 -20; dur: 20000; easing: linear; loop: true"></a-torus>
+    <a-light id="coreLight" type="point" intensity="1.2" distance="16" decay="1.6" color="#2ee6a8"></a-light>
+    <a-text id="coreLabel" value="NOTRE UNIVERS" align="center" position="0 1.75 0" width="6" color="#dde3f5" billboard></a-text>
+    <a-text id="coreState" value="Etoiles, galaxies, chimie, vie : possible" align="center" position="0 1.45 0" width="4.4" color="#2ee6a8" billboard></a-text>
+    <a-text id="coreHint" value="( cliquez la sphere pour explorer )" align="center" position="0 1.17 0" width="3" color="#8b94b8" billboard></a-text>
+  </a-entity>
+
+  <a-entity light="type: ambient; intensity: 0.4; color: #aab4ff"></a-entity>
+  <a-entity light="type: point; intensity: 0.45; color: #cfd8ff" position="0 7 0"></a-entity>
+
+  <a-entity id="stations"></a-entity>
+
+  <a-entity id="rig" position="0 0 3.4">
+    <a-camera wasd-controls="acceleration: 22" look-controls="pointerLockEnabled: false"></a-camera>
+  </a-entity>
+
+  <a-text value="LE REGLAGE FIN DE L'UNIVERS" align="center" position="0 5.8 0" width="15" color="#dde3f5" billboard></a-text>
+  <a-text value="7 constantes - 1 argument - 5 objections" align="center" position="0 5.3 0" width="7.5" color="#8b94b8" billboard></a-text>
+</a-scene>
+
+<script>
+/* =============================================================
+   Composants A-Frame
+============================================================= */
+AFRAME.registerComponent('starfield', {
+  init: function () {
+    const mk = (N, size, spread) => {
+      const geo = new THREE.BufferGeometry(), pos = new Float32Array(N*3), col = new Float32Array(N*3);
+      const pal = [[.81,.86,1],[1,.92,.78],[.66,.78,1],[1,1,1],[1,.8,.85]];
+      for (let i = 0; i < N; i++) {
+        const r = 45 + Math.random()*spread, th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+        pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+        pos[i*3+1] = Math.abs(r * Math.cos(ph)) * (Math.random() > .9 ? -0.15 : 1);
+        pos[i*3+2] = r * Math.sin(ph) * Math.sin(th);
+        const c = pal[(Math.random()*pal.length)|0];
+        col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+      return new THREE.Points(geo, new THREE.PointsMaterial({
+        size, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: .95, fog: false }));
+    };
+    this.el.setObject3D('points',  mk(1600, .5, 110));
+    this.el.setObject3D('points2', mk(500, 1.1, 120));
+  }
+});
+AFRAME.registerComponent('nebula-sky', {
+  init: function () {
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#04050e'; c.fillRect(0, 0, 1024, 512);
+    const blob = (x, y, r, col, a) => {
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = a; c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.globalAlpha = 1;
+    };
+    blob(200,160,180,'#1b2a6b',.55); blob(320,220,120,'#3a1b5e',.5);
+    blob(780,140,200,'#0f3a4d',.45); blob(880,260,140,'#4d1b3a',.35);
+    blob(520, 90,150,'#22164d',.5);  blob(640,330,170,'#132a4d',.4);
+    blob( 90,330,140,'#2a0f3d',.4);
+    for (let i = 0; i < 420; i++) {
+      c.globalAlpha = Math.random()*.8; c.fillStyle = '#cdd8ff';
+      c.fillRect(Math.random()*1024, Math.random()*512, 1, 1);
+    }
+    c.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(cv);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false });
+    this.el.setObject3D('sky', new THREE.Mesh(new THREE.SphereGeometry(180, 32, 20), mat));
+  }
+});
+AFRAME.registerComponent('dust', {
+  init: function () {
+    const N = 140, geo = new THREE.BufferGeometry(), pos = new Float32Array(N*3);
+    for (let i = 0; i < N; i++) {
+      const r = Math.sqrt(Math.random())*14, a = Math.random()*Math.PI*2;
+      pos[i*3] = Math.cos(a)*r; pos[i*3+1] = Math.random()*5 + .2; pos[i*3+2] = Math.sin(a)*r;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.el.setObject3D('points', new THREE.Points(geo, new THREE.PointsMaterial({
+      color: 0x8fa3ff, size: .05, transparent: true, opacity: .45 })));
+  }
+});
+AFRAME.registerComponent('universe-surface', {
+  init: function () {
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#061530'; c.fillRect(0, 0, 1024, 512);
+    /* filaments de la toile cosmique */
+    for (let i = 0; i < 70; i++) {
+      c.strokeStyle = `rgba(${90+Math.random()*60|0},${160+Math.random()*60|0},${170+Math.random()*60|0},${.05+Math.random()*.08})`;
+      c.lineWidth = 1 + Math.random()*2;
+      c.beginPath();
+      let x = Math.random()*1024, y = Math.random()*512; c.moveTo(x, y);
+      for (let k = 0; k < 4; k++) {
+        x += (Math.random()-.5)*260; y += (Math.random()-.5)*160;
+        c.quadraticCurveTo(x+(Math.random()-.5)*80, y+(Math.random()-.5)*80, x, y);
+      }
+      c.stroke();
+    }
+    /* amas de galaxies */
+    const cols = ['#bfe8ff','#ffe2c9','#ffc9e2','#c9ffe8','#ffffff'];
+    for (let i = 0; i < 380; i++) {
+      const x = Math.random()*1024, y = Math.random()*512, r = 1 + Math.random()*3.5;
+      const g = c.createRadialGradient(x, y, 0, x, y, r*3);
+      g.addColorStop(0, cols[(Math.random()*cols.length)|0]); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = .35 + Math.random()*.5; c.fillStyle = g;
+      c.beginPath(); c.arc(x, y, r*3, 0, 7); c.fill();
+    }
+    c.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(cv);
+    const apply = () => {
+      const m = this.el.getObject3D('mesh'); if (!m) return;
+      m.material.map = tex; m.material.emissiveMap = tex; m.material.needsUpdate = true;
+    };
+    apply();
+    this.el.addEventListener('object3dset', e => { if (e.detail.type === 'mesh') apply(); });
+    /* le composant material d'A-Frame efface map/emissiveMap a chaque mise a jour :
+       setUniverse() re-applique la texture via ce rappel */
+    window.__applyCoreTex = apply;
+  }
+});
+AFRAME.registerComponent('core-swarm', {
+  init: function () {
+    const N = 320, geo = new THREE.BufferGeometry(), pos = new Float32Array(N*3), col = new Float32Array(N*3);
+    const pal = [[.75,.91,1],[1,.89,.79],[1,.79,.89],[.79,1,.91],[1,1,1]];
+    for (let i = 0; i < N; i++) {
+      const r = .95 + Math.random()*.45, th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+      pos[i*3] = r*Math.sin(ph)*Math.cos(th); pos[i*3+1] = r*Math.cos(ph)*.75; pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
+      const c = pal[(Math.random()*pal.length)|0];
+      col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    this.el.setObject3D('points', new THREE.Points(geo, new THREE.PointsMaterial({
+      size: .03, vertexColors: true, transparent: true, opacity: .85 })));
+  }
+});
+AFRAME.registerComponent('billboard', {
+  tick: function () {
+    const cam = this.el.sceneEl.camera;
+    if (cam) this.el.object3D.lookAt(cam.getWorldPosition(new THREE.Vector3()));
+  }
+});
+
+/* =============================================================
+   Donnees des stations
+============================================================= */
+const fmtSigne = v => (v > 0 ? '+' + v : '' + v);
+
+const STATIONS = [
+{
+  id:'lambda', couleur:'#7c4dff', label3d:'CONSTANTE\nCOSMOLOGIQUE', num3d:'1 sur 10^120', tag3d:'l energie du vide',
+  titre:'La constante cosmologique (Λ)', bignum:'1 chance sur 10<sup>120</sup>',
+  corps:`
+   <p><b>Ce que c'est.</b> Λ est l'énergie du vide, le « ressort » qui accélère l'expansion de
+   l'Univers. La théorie quantique des champs prédit une valeur environ <b>10<sup>120</sup> fois plus
+   grande</b> que celle observée — souvent qualifiée de « pire prédiction de l'histoire de la
+   physique ».</p>
+   <p><b>Le réglage.</b> Sur cette immense plage naturelle de valeurs, seule une fenêtre de quelques
+   ordres de grandeur autour de la valeur réelle permet la formation des galaxies. Un peu plus grande
+   et positive : la matière est dispersée avant de pouvoir s'agréger. Négative : l'Univers se
+   recontracte en Big Crunch quasi immédiat. C'est l'exemple de réglage fin le plus cité de toute la
+   littérature.</p>`,
+  slider:{ min:-120, max:120, step:1, def:0, unite:'ordres de grandeur d\'écart',
+    fmt:v=>`Écart : ${fmtSigne(v)} ordre(s) de grandeur`,
+    zone:v=> Math.abs(v)<=1
+      ? {ok:true,  mode:'vie',      msg:'Λ est dans la fenêtre : les galaxies se forment, les étoiles s\'allument, la vie est possible.'}
+      : v>1 ? {ok:false, mode:'disperse', msg:'Expansion catastrophique : la matière est dispersée avant de former la moindre galaxie. Univers de gaz froid et solitaire.'}
+            : {ok:false, mode:'crunch',   msg:'Λ négative dominante : l\'Univers se recontracte en Big Crunch bien avant la première étoile.'} },
+  sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » ; J. De Vuyst, <i>A Natural Introduction to Fine-Tuning</i> (arXiv:2012.05617).'
+},
+{
+  id:'entropie', couleur:'#ff6b9d', label3d:'ENTROPIE\nINITIALE', num3d:'1 sur 10^(10^123)', tag3d:'l ordre du Big Bang',
+  titre:'L\'entropie initiale de l\'Univers', bignum:'1 chance sur 10<sup>10<sup>123</sup></sup>',
+  corps:`
+   <p><b>Ce que c'est.</b> Pour qu'un univers développe des structures (galaxies, étoiles, planètes),
+   il doit naître dans un état extraordinairement <b>ordonné</b> (entropie basse) — sinon il n'est
+   qu'une soupe de trous noirs.</p>
+   <p><b>Le réglage.</b> Roger Penrose a calculé la part de l'espace des états initiaux possibles
+   correspondant à un univers aussi ordonné que le nôtre : <b>1 sur 10<sup>10<sup>123</sup></sup></b>.
+   Ce nombre est si grand qu'on ne peut même pas l'écrire : il faudrait plus de zéros qu'il n'y a de
+   particules dans l'univers observable (~10<sup>80</sup>). C'est, de très loin, le réglage le plus
+   extrême connu.</p>`,
+  slider:{ min:0, max:100, step:1, def:0, unite:'désordre initial (échelle arbitraire)',
+    fmt:v=>`Désordre initial : ${v} / 100`,
+    zone:v=> v<1
+      ? {ok:true,  mode:'vie',       msg:'Univers primordial quasi parfaitement lisse : la gravité peut sculpter lentement des galaxies. La flèche du temps fonctionne.'}
+      : {ok:false, mode:'blackhole', msg:'L\'univers naît déjà froissé : il est dominé par les trous noirs dès le départ. Aucune structure, aucune thermodynamique exploitable, aucune vie.'} },
+  sources:'R. Penrose, <i>The Emperor\'s New Mind</i> (1989) ; repris dans la littérature du fine-tuning (Barnes, SEP).'
+},
+{
+  id:'forte', couleur:'#ffa94d', label3d:'FORCE\nNUCLEAIRE FORTE', num3d:'± 0,5 %', tag3d:'la colle des noyaux',
+  titre:'La force nucléaire forte', bignum:'± 0,5 %',
+  corps:`
+   <p><b>Ce que c'est.</b> La force qui soude protons et neutrons dans les noyaux atomiques — et qui
+   permet aux étoiles de fusionner l'hydrogène en éléments lourds.</p>
+   <p><b>Le réglage.</b> Le carbone n'existe en abondance que grâce à une coïncidence célèbre : la
+   <b>résonance de Hoyle</b>, un niveau d'énergie du noyau de carbone placé exactement là où il faut
+   (7,65 MeV) pour que trois noyaux d'hélium fusionnent dans les étoiles. Décalez la force forte de
+   <b>quelques dixièmes de pour cent</b> : les étoiles produisent de l'oxygène sans carbone, ou du
+   carbone sans oxygène. Décalez-la de ±50 % : soit tout l'hydrogène brûle dès le Big Bang (plus
+   d'eau, plus de Soleil), soit la nucléosynthèse stellaire s'effondre entièrement.</p>`,
+  slider:{ min:-50, max:50, step:0.5, def:0, unite:'variation en %',
+    fmt:v=>`Variation : ${fmtSigne(v)} %`,
+    zone:v=>{const a=Math.abs(v);
+      return a<=0.5 ? {ok:true,  mode:'vie',      msg:'Résonance de Hoyle en place : les étoiles fabriquent carbone ET oxygène. La chimie de la vie est ouverte.'}
+      : a<=10 ? {ok:false, mode:'dimstars', tint:'#cfd6e6', msg:'La résonance du carbone est décalée : les étoiles produisent presque exclusivement l\'un des deux (carbone OU oxygène). Pas d\'eau + chimie organique ensemble.'}
+      : v>10  ? {ok:false, mode:'embers',   msg:'Le diproton devient stable : tout l\'hydrogène de l\'univers primordial brûle en quelques minutes. Plus de combustible stellaire, plus d\'eau, plus de soleils durables.'}
+              : {ok:false, mode:'fog', tint:'#5a6480', msg:'Les noyaux ne tiennent plus : plus de fusion, plus d\'éléments au-delà de l\'hydrogène. Univers chimiquement mort.'};} },
+  sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » (§ nucléosynthèse) ; F. Hoyle (1953) ; L. Barnes, <i>The Fine-Tuning of the Universe for Intelligent Life</i> (2012).'
+},
+{
+  id:'higgs', couleur:'#4dd0ff', label3d:'MASSE\nDU HIGGS', num3d:'34 decimales', tag3d:'l origine des masses',
+  titre:'La masse du boson de Higgs', bignum:'annulation à 34 décimales près',
+  corps:`
+   <p><b>Ce que c'est.</b> Le champ de Higgs donne leur masse aux particules élémentaires. Sa valeur
+   observée (125 GeV) fixe la masse de l'électron et des quarks — donc la taille des atomes et toute
+   la chimie.</p>
+   <p><b>Le réglage.</b> En théorie quantique des champs, les corrections naturelles à cette masse
+   sont ~10<sup>34</sup> fois plus grandes que la valeur observée : les paramètres fondamentaux doivent
+   <b>s'annuler mutuellement sur 34 décimales</b> pour donner le résultat mesuré. C'est le « problème
+   de la hiérarchie », l'une des motivations principales de la physique au-delà du Modèle standard.
+   Multipliez la valeur du champ par quelques unités seulement : plus aucun atome complexe stable.</p>`,
+  slider:{ min:-3, max:3, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
+    fmt:v=>`Champ de Higgs : × ${Math.pow(10,v).toPrecision(2)}`,
+    zone:v=> Math.abs(v)<=0.3
+      ? {ok:true,  mode:'vie',   msg:'Masses de l\'électron et des quarks dans la bonne fenêtre : atomes stables, liaisons chimiques riches.'}
+      : v>0.3 ? {ok:false, mode:'decay', msg:'Particules trop massives : les noyaux complexes se désintègrent, plus d\'atomes stables au-delà des plus légers. Aucune chimie.'}
+              : {ok:false, mode:'decay', msg:'Particules trop légères : protons et neutrons se désagrègent, la matière ordinaire n\'existe plus.'} },
+  sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » ; J. De Vuyst, arXiv:2012.05617 (problème de la hiérarchie).'
+},
+{
+  id:'gravite', couleur:'#69db7c', label3d:'GRAVITE', num3d:'1 sur 10^36', tag3d:'l architecte des etoiles',
+  titre:'La gravité face aux autres forces', bignum:'rapport de 10<sup>36</sup>',
+  corps:`
+   <p><b>Ce que c'est.</b> La gravité est ~10<sup>36</sup> fois plus faible que la force
+   électromagnétique entre deux protons. Cette faiblesse extrême n'est pas un défaut : c'est elle qui
+   permet aux étoiles d'être énormes et de brûler pendant des milliards d'années.</p>
+   <p><b>Le réglage.</b> Une gravité légèrement plus forte : les étoiles deviennent minuscules et
+   s'éteignent en quelques millions d'années — bien trop court pour qu'une évolution biologique ait
+   lieu sur une planète voisine. Légèrement plus faible : la matière ne se comprime jamais assez pour
+   allumer la fusion. Aucune étoile, aucun élément lourd, aucune planète.</p>`,
+  slider:{ min:-6, max:6, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
+    fmt:v=>`Gravité : × ${Math.pow(10,v).toPrecision(2)}`,
+    zone:v=> Math.abs(v)<=1
+      ? {ok:true,  mode:'vie',    msg:'Des étoiles comme le Soleil brûlent paisiblement pendant des milliards d\'années : le temps nécessaire à l\'évolution.'}
+      : v>1 ? {ok:false, mode:'sparks', msg:'Étoiles naines éphémères : elles s\'éteignent en quelques millions d\'années. Les planètes n\'ont jamais le temps d\'abriter une biosphère.'}
+            : {ok:false, mode:'fog', tint:'#6a7490', msg:'La gravité n\'allume plus aucune étoile : univers de gaz froid, sombre et chimiquement stérile.'} },
+  sources:'M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
+},
+{
+  id:'grumeaux', couleur:'#b197fc', label3d:'GRUMEAUX\nPRIMORDIAUX', num3d:'Q = 2 x 10^-5', tag3d:'les graines des galaxies',
+  titre:'Les fluctuations primordiales (Q)', bignum:'Q ≈ 2 × 10<sup>-5</sup>',
+  corps:`
+   <p><b>Ce que c'est.</b> L'univers primordial n'était pas parfaitement lisse : il portait
+   d'infimes « grumeaux » de densité, d'amplitude Q ≈ 2 × 10<sup>-5</sup>, visibles aujourd'hui dans
+   le fond diffus cosmologique. Ce sont les graines des galaxies.</p>
+   <p><b>Le réglage.</b> Divisez Q par dix : la gravité n'amplifie jamais ces grumeaux, le gaz ne se
+   condense pas, aucune galaxie ni étoile ne se forme. Multipliez-le par dix : la matière s'effondre
+   en trous noirs supermassifs et l'univers baigne dans un rayonnement violent, hostile à toute
+   chimie complexe.</p>`,
+  slider:{ min:-2, max:2, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
+    fmt:v=>`Q : × ${Math.pow(10,v).toPrecision(2)}`,
+    zone:v=> Math.abs(v)<=1
+      ? {ok:true,  mode:'vie',       msg:'Les grumeaux grandissent en galaxies majestueuses, sans excès : notre univers structuré et calme.'}
+      : v>1 ? {ok:false, mode:'blackhole', msg:'Effondrement violent : trous noirs supermassifs et déluges de rayonnement. Aucun havre pour la chimie du vivant.'}
+            : {ok:false, mode:'fog', tint:'#7a86a8', msg:'Univers resté lisse : le gaz ne se condense jamais. Ni galaxies, ni étoiles, ni planètes — un brouillard éternel.'} },
+  sources:'M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning » (densité et fluctuations).'
+},
+{
+  id:'quarks', couleur:'#63e6be', label3d:'QUARKS\n& ATOMES', num3d:'quelques %', tag3d:'la matiere stable',
+  titre:'Masses des quarks et de l\'électron', bignum:'quelques % de marge',
+  corps:`
+   <p><b>Ce que c'est.</b> Protons et neutrons sont faits de quarks <i>up</i> et <i>down</i>. La
+   stabilité de toute la matière repose sur un équilibre délicat entre leurs masses et celle de
+   l'électron (m<sub>e</sub>/m<sub>p</sub> = 5,45 × 10<sup>-4</sup>), couplé à la constante de
+   structure fine α ≈ 1/137.</p>
+   <p><b>Le réglage.</b> Alourdissez un peu le quark down : le deutérium devient instable, la
+   nucléosynthèse s'arrête, l'univers reste de l'hydrogène pur. Allégez-le (ou alourdissez le up) :
+   le proton devient plus lourd que le neutron et <b>l'hydrogène lui-même se désintègre</b> — univers
+   de neutrons, sans atomes, sans chimie, sans rien.</p>`,
+  slider:{ min:-50, max:50, step:1, def:0, unite:'variation de la masse du quark down (%)',
+    fmt:v=>`Quark down : ${fmtSigne(v)} %`,
+    zone:v=> Math.abs(v)<=2
+      ? {ok:true,  mode:'vie', msg:'Protons stables, neutrons juste assez lourds : le tableau périodique complet est possible.'}
+      : v>2 ? {ok:false, mode:'dimstars', tint:'#ff9d7a', msg:'Le deutérium ne tient plus : la chaîne de fusion s\'arrête net. Univers d\'hydrogène pur, sans étoiles brillantes ni chimie.'}
+            : {ok:false, mode:'fog', tint:'#8a8f9c', msg:'Le proton devient instable et se désintègre : univers de neutrons. Aucun atome, aucune molécule, jamais.'} },
+  sources:'J. De Vuyst, arXiv:2012.05617 ; L. Barnes (2012) ; Stanford Encyclopedia of Philosophy.'
+},
+/* ---------- stations philosophiques ---------- */
+{
+  id:'argument', phi:true, couleur:'#ffd166', label3d:'L ARGUMENT', num3d:'p < 10^-136', tag3d:'la formulation bayesienne',
+  titre:'L\'argument : formulation bayésienne', bignum:'P(vie | hasard) ≲ 10<sup>-136</sup>',
+  corps:`
+   <p>Le philosophe-astrophysicien <b>Luke Barnes</b> (« A Reasonable Little Question », <i>Ergo</i>
+   2019) pose la question ainsi : <i>si les constantes de la physique avaient été tirées au sort dans
+   leurs plages possibles, quelle chance qu'un univers permette la vie ?</i> Sa réponse, en combinant
+   les contraintes ci-contre : <b>moins de 1 sur 10<sup>136</sup></b>.</p>
+   <h3>L'argument en trois pas</h3>
+   <p><b>P1.</b> Sous le <b>naturalisme</b> (pas de Dieu, les constantes sont un fait brut), un
+   univers permettant la vie est extraordinairement improbable : P(V | N) ≲ 10<sup>-136</sup>.</p>
+   <p><b>P2.</b> Sous le <b>théisme</b>, un Dieu ayant des raisons de créer des êtres conscients
+   rend un univers habitable non improbable : P(V | T) n'est pas minuscule.</p>
+   <p><b>C.</b> Par le théorème de Bayes, l'existence d'un univers permettant la vie <b>confirme
+   très fortement le théisme par rapport au naturalisme</b>.</p>
+   <div class="bayes">
+     P(T | V) / P(N | V) &nbsp;=&nbsp; <span style="color:var(--gold)">[ P(V | T) / P(V | N) ]</span>
+     &nbsp;×&nbsp; P(T) / P(N)
+   </div>
+   <p style="font-size:14px;color:var(--dim)">Le facteur doré — le rapport de vraisemblance — est
+   gigantesque (jusqu'à ~10<sup>136</sup>). L'argument ne prétend pas <i>prouver</i> Dieu : il affirme
+   que le réglage fin est une <b>évidence massive</b> en faveur du théisme, que chacun doit ensuite
+   combiner avec ses probabilités a priori et le reste de ce qu'il sait.</p>
+   <h3>Pourquoi « pas si vite, ce n'est pas du hasard » ne suffit pas</h3>
+   <p>L'objection « les constantes ne sont pas tirées au sort, elles sont juste ce qu'elles sont »
+   revient à refuser de s'étonner devant le peloton d'exécution qui rate cinquante fois. En
+   épistémologie bayésienne, une hypothèse qui rend une observation attendue est confirmée face à une
+   hypothèse qui la rend astronomiquement surprenante — même si l'observation est « déjà là ».</p>`,
+  sources:'L. Barnes, « A Reasonable Little Question: A Formulation of the Fine-Tuning Argument », <i>Ergo</i> 6 (2019) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
+},
+{
+  id:'objections', phi:true, couleur:'#ffd166', label3d:'OBJECTIONS\n& REPONSES', num3d:'5 debats', tag3d:'l autre cote de la balance',
+  titre:'Les objections — et leurs réponses', bignum:'5 débats classiques',
+  corps:`
+   <details open><summary>1 · Le multivers</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> S'il existe une immensité d'univers aux constantes
+     variées (inflation éternelle, paysage des supercordes), certains permettront la vie par simple
+     loterie — et nous sommes forcément dans l'un d'eux. Pas besoin de Dieu.</p>
+     <p><span class="rep"><b>Réponses.</b></span> (a) Les mécanismes générateurs de multivers
+     (inflation, paysage) requièrent eux-mêmes des lois et paramètres… ajustés — le problème remonte
+     d'un étage. (b) Le <i>sophisme du joueur inversé</i> (Hacking, White) : voir un double-six ne
+     prouve pas que des milliers de lancers ont eu lieu ; le multivers explique qu'<i>un</i> univers
+     soit habitable, pas que <i>celui-ci</i> le soit. (c) Un multivers dominé par les fluctuations
+     aléatoires produirait surtout des « cerveaux de Boltzmann » — des observateurs isolés — pas des
+     univers ordonnés comme le nôtre. (d) Il reste empiriquement invérifiable à ce jour.</p></div></details>
+   <details><summary>2 · Le principe anthropique (effet de sélection)</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> Nous ne pouvions observer qu'un univers compatible
+     avec notre existence. Aucune surprise, donc rien à expliquer.</p>
+     <p><span class="rep"><b>Réponse.</b></span> L'analogie du peloton d'exécution (John Leslie) : que
+     vous ne puissiez constater votre survie <i>que</i> si les cinquante tireurs ratent n'ôte rien au
+     fait que leur échec collectif crie une explication (balles à blanc ? complot ?). L'effet de
+     sélection explique <i>pourquoi nous voyons</i> un univers réglé, pas <i>pourquoi il en existe un</i>.</p></div></details>
+   <details><summary>3 · Les probabilités sont mal définies (normalisabilité)</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> (McGrew & Vestrup) Les constantes pouvant en
+     principe prendre des valeurs sur des plages infinies, aucune distribution uniforme n'existe :
+     parler de « probabilité » du réglage serait dénué de sens.</p>
+     <p><span class="rep"><b>Réponse.</b></span> (Barnes) On ne raisonne pas sur des plages infinies
+     mais sur le <b>domaine de validité des théories elles-mêmes</b> (jusqu'à l'échelle de Planck) :
+     des plages finies, sur lesquelles les probabilités sont parfaitement définies — c'est exactement
+     ainsi que les physiciens jugent qu'une théorie est « non naturelle ».</p></div></details>
+   <details><summary>4 · Une théorie ultime expliquera les constantes</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> Une future « théorie du tout » dérivera peut-être
+     ces valeurs : elles n'auraient rien de contingent.</p>
+     <p><span class="rep"><b>Réponse.</b></span> Le problème serait déplacé, pas dissous : pourquoi
+     <i>cette</i> théorie ultime, parmi toutes les théories cohérentes possibles, une qui débouche sur
+     la vie ? De plus, certains réglages (constante cosmologique, entropie initiale) résistent depuis
+     des décennies à toute dérivation — et la coïncidence deviendrait alors plus stupéfiante, pas moins.</p></div></details>
+   <details><summary>5 · « Et qui a réglé Dieu ? »</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> Expliquer un réglage par un Régleur ne fait que
+     reculer la question : qui a ajusté le Régleur ?</p>
+     <p><span class="rep"><b>Réponse.</b></span> Dans le théisme classique, Dieu n'est pas un objet
+     physique doté de paramètres numériques susceptibles de « réglage » : la question serait mal posée.
+     Et méthodologiquement, une explication peut être bonne sans qu'on explique l'explication (on
+     accepte une théorie physique sans exiger d'abord sa méta-théorie). Le débat reste ouvert — c'est
+     l'une des discussions les plus vivantes de la philosophie de la religion contemporaine.</p></div></details>`,
+  sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » (objections) ; J. Leslie, <i>Universes</i> (1989) ; R. White (2000) ; T. & L. McGrew, E. Vestrup (2001) ; L. Barnes, <i>Ergo</i> (2019).'
+}
+];
+
+/* Fiche du coeur : notre Univers */
+const CORE_INFO = {
+  id:'univers', couleur:'#2ee6a8', cat:'Le résultat du réglage',
+  titre:'Notre Univers — la cible au centre', bignum:'13,8 milliards d\'années',
+  corps:`
+   <p><b>La cible.</b> Cette sphère représente ce que produisent, <i>ensemble</i>, les réglages des
+   sept stations qui l'entourent : un univers structuré, chimiquement riche et assez durable pour
+   engendrer des observateurs. Déréglez n'importe quelle station et regardez-la s'éteindre.</p>
+   <h3>Fiche d'identité</h3>
+   <ul>
+     <li><b>Âge :</b> 13,8 milliards d'années ; univers observable de ~93 milliards d'années-lumière de diamètre.</li>
+     <li><b>Contenu :</b> ~2 000 milliards de galaxies, de l'ordre de 10<sup>22</sup> à 10<sup>24</sup> étoiles,
+         ~10<sup>80</sup> particules de matière ordinaire.</li>
+     <li><b>Recette cosmique :</b> ~68 % d'énergie sombre, ~27 % de matière noire, ~5 % de matière
+         ordinaire ; fond diffus cosmologique à 2,7 K.</li>
+     <li><b>Chimie :</b> 92 éléments naturels forgés dans les étoiles — dont le carbone de vos
+         cellules et l'oxygène de votre souffle, issus de la résonance de Hoyle.</li>
+     <li><b>Structure :</b> une « toile cosmique » de filaments de galaxies (visible à la surface de
+         la sphère), tissée par la gravité à partir des grumeaux primordiaux Q.</li>
+   </ul>
+   <h3>Pourquoi c'est remarquable</h3>
+   <p>Chacune de ces propriétés dépend <b>simultanément</b> de plusieurs constantes : les étoiles
+   durables exigent la bonne gravité <i>et</i> la bonne force forte <i>et</i> le bon Λ ; la chimie
+   exige les bonnes masses de quarks <i>et</i> le bon champ de Higgs. Notre Univers se tient à
+   l'intersection de toutes les fenêtres à la fois — c'est cette conjonction, astronomiquement
+   étroite, que l'argument du réglage fin interroge.</p>`,
+  sources:'Collaboration Planck (2018) ; M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
+};
+
+/* =============================================================
+   Construction des stations 3D
+============================================================= */
+const holder = document.getElementById('stations');
+const R = 6.8;
+STATIONS.forEach((s, i) => {
+  const ang = (i / STATIONS.length) * Math.PI * 2 - Math.PI / 2;
+  const x = Math.cos(ang) * R, z = Math.sin(ang) * R;
+  const yaw = -ang * 180 / Math.PI - 90;
+
+  const st = document.createElement('a-entity');
+  st.setAttribute('position', `${x} 0 ${z}`);
+  st.setAttribute('rotation', `0 ${yaw} 0`);
+
+  const accent = s.couleur;
+  const dur = 2800 + (i % 4) * 350;
+  st.innerHTML = `
+    <a-ring rotation="-90 0 0" position="0 0.02 0" radius-inner="0.9" radius-outer="1.0"
+            color="${accent}" material="emissive:${accent}; emissiveIntensity:.6; opacity:.75; transparent:true"
+            animation="property: scale; from: 1 1 1; to: 1.1 1.1 1.1; dir: alternate; dur: ${dur}; loop: true; easing: easeInOutSine"></a-ring>
+    <a-box width="0.04" height="0.006" depth="3.6" position="0 0.012 2.8" color="${accent}"
+           material="emissive:${accent}; emissiveIntensity:.5; opacity:.28; transparent:true"></a-box>
+    <a-cylinder radius="0.46" height="0.1" position="0 0.05 0" color="#0d1226" material="metalness:.7; roughness:.3"></a-cylinder>
+    <a-cylinder radius="0.2" height="0.85" position="0 0.55 0" color="#141b38" material="metalness:.8; roughness:.25"></a-cylinder>
+    <a-cylinder radius="0.3" height="0.05" position="0 1.0 0" color="${accent}"
+                material="emissive:${accent}; emissiveIntensity:.7; metalness:.4; roughness:.4"></a-cylinder>
+    <a-cylinder radius="0.6" height="1.1" position="0 0.55 0"
+                material="shader: flat; color: ${accent}; opacity: .06; transparent: true; side: double; depthWrite: false"></a-cylinder>
+    <a-entity animation="property: position; from: 0 0 0; to: 0 0.09 0; dir: alternate; dur: ${dur + 400}; loop: true; easing: easeInOutSine">
+      <a-plane width="2.58" height="1.7" position="0 2.05 -0.012" color="${accent}"
+               material="emissive:${accent}; emissiveIntensity:.45; opacity:.45; transparent:true; side:double"></a-plane>
+      <a-plane width="2.5" height="1.62" position="0 2.05 0" color="#080d20"
+               material="opacity:.94; transparent:true; side:double"></a-plane>
+      <a-box width="2.5" height="0.025" depth="0.015" position="0 2.88 0.01" color="${accent}"
+             material="emissive:${accent}; emissiveIntensity:.9"></a-box>
+      <a-text value="${s.label3d}" align="center" position="0 2.52 0.01" width="4.6" color="#ffffff"></a-text>
+      <a-text value="${s.num3d}"  align="center" position="0 2.02 0.01" width="6.2" color="${accent}"></a-text>
+      <a-text value="${s.tag3d}"  align="center" position="0 1.66 0.01" width="3.4" color="#8b94b8"></a-text>
+      ${s.phi ? '' : `
+      <a-box width="1.7" height="0.055" depth="0.02" position="0 1.42 0.02" color="#7a1d30"></a-box>
+      <a-box width="0.012" height="0.10" depth="0.03" position="0 1.42 0.03" color="#2ee6a8"
+             material="emissive:#2ee6a8; emissiveIntensity:1"></a-box>
+      <a-text value="zone vitale (echelle reelle : invisible)" align="center" position="0 1.24 0.02"
+              width="2.6" color="#8b94b8"></a-text>`}
+    </a-entity>
+    <a-cylinder class="clickable" radius="1.25" height="3.4" position="0 1.7 0"
+                material="opacity:0; transparent:true" data-id="${s.id}"></a-cylinder>
+  `;
+  holder.appendChild(st);
+
+  const hit = st.querySelector('.clickable');
+  hit.addEventListener('click', () => openStation(s.id));
+  hit.addEventListener('mouseenter', () => st.setAttribute('scale', '1.06 1.06 1.06'));
+  hit.addEventListener('mouseleave', () => st.setAttribute('scale', '1 1 1'));
+});
+
+/* =============================================================
+   HUD (acces direct)
+============================================================= */
+const hud = document.getElementById('hud');
+const coreChip = document.createElement('button');
+coreChip.className = 'chip'; coreChip.style.borderColor = '#2ee6a8';
+coreChip.textContent = '☉ Notre Univers';
+coreChip.onclick = () => openStation('univers');
+hud.appendChild(coreChip);
+document.getElementById('coreSphere').addEventListener('click', () => openStation('univers'));
+STATIONS.forEach(s => {
+  const b = document.createElement('button');
+  b.className = 'chip' + (s.phi ? ' phi' : '');
+  b.textContent = s.label3d.replace('\n', ' ').toLowerCase().replace(/(^| )\w/g, c => c.toUpperCase());
+  b.onclick = () => openStation(s.id);
+  hud.appendChild(b);
+});
+const help = document.createElement('button');
+help.className = 'chip'; help.textContent = '? Aide';
+help.onclick = () => document.getElementById('intro').style.display = 'flex';
+hud.appendChild(help);
+
+/* =============================================================
+   Overlay de station + experience curseur
+============================================================= */
+const overlay = document.getElementById('panelOverlay');
+const modal   = document.getElementById('panelModal');
+
+function setUniverse(ok, msg) {
+  const sph = document.getElementById('coreSphere');
+  const lbl = document.getElementById('coreState');
+  const col = ok ? '#2ee6a8' : '#ff5470';
+  sph.setAttribute('color', ok ? '#bfeee2' : '#ff5470');
+  sph.setAttribute('material', { emissive: col, emissiveIntensity: ok ? .5 : .85 });
+  if (window.__applyCoreTex) window.__applyCoreTex();
+  document.getElementById('coreHalo1').setAttribute('material', 'color', col);
+  document.getElementById('coreHalo2').setAttribute('material', 'color', col);
+  document.getElementById('coreLight').setAttribute('light', 'color', col);
+  lbl.setAttribute('color', col);
+  lbl.setAttribute('value', ok ? 'Etoiles, galaxies, chimie, vie : possible' : 'UNIVERS STERILE');
+}
+
+/* =============================================================
+   Simulation d'univers (canvas) — reagit au curseur
+============================================================= */
+const SIM = {c:null,x:null,parts:[],mode:'vie',tint:null,raf:0,t:0,W:0,H:220};
+const SIM_CENTRES = [[.25,.35],[.7,.28],[.45,.72],[.82,.7]];   // galaxies
+const SIM_PUITS   = [[.3,.4],[.72,.35],[.5,.75]];              // trous noirs
+const VIE_COLS = ['#cfe0ff','#ffe9c9','#9fd8ff','#ffd9f0'];
+
+function simSeed() {
+  SIM.parts = [];
+  for (let i = 0; i < 240; i++) {
+    SIM.parts.push({ x:Math.random()*SIM.W, y:Math.random()*SIM.H, c:i%4,
+      R:8+Math.random()*48, a:Math.random()*6.28, s:.4+Math.random()*1.2,
+      tw:Math.random()*6.28, life:Math.random() });
+  }
+}
+function simSet(mode, tint) { if (mode !== SIM.mode) { SIM.mode = mode; SIM.t = 0; } SIM.tint = tint || null; }
+function simInit(canvas) {
+  SIM.c = canvas; SIM.x = canvas.getContext('2d');
+  SIM.W = canvas.width = Math.max(200, Math.round(canvas.getBoundingClientRect().width));
+  SIM.H = canvas.height = 220;
+  simSeed(); SIM.t = 0;
+  cancelAnimationFrame(SIM.raf);
+  (function loop(){ simStep(); SIM.raf = requestAnimationFrame(loop); })();
+}
+function simStop() { cancelAnimationFrame(SIM.raf); }
+
+function dot(x, y, r, col, al) {
+  const c = SIM.x; c.globalAlpha = Math.max(0, Math.min(1, al)); c.fillStyle = col;
+  c.beginPath(); c.arc(x, y, r, 0, 6.29); c.fill(); c.globalAlpha = 1;
+}
+
+function simStep() {
+  const c = SIM.x, W = SIM.W, H = SIM.H, u = SIM.t++, m = SIM.mode;
+  c.fillStyle = (m === 'embers') ? 'rgba(16,5,2,.3)' : 'rgba(3,5,15,.3)';
+  c.fillRect(0, 0, W, H);
+
+  if (m === 'vie') {                       /* galaxies spirales, etoiles stables */
+    const ctr = SIM_CENTRES.map(([fx,fy]) => [fx*W, fy*H]);
+    ctr.forEach(([cx,cy]) => { dot(cx,cy,26,'#8fb0ff',.05); dot(cx,cy,3,'#ffffff',.9); });
+    for (const p of SIM.parts) {
+      const [cx,cy] = ctr[p.c];
+      p.a += .012 * p.s * (30/p.R);
+      const px = cx + Math.cos(p.a+p.c)*p.R*1.35, py = cy + Math.sin(p.a+p.c)*p.R*.6;
+      p.x += (px-p.x)*.08; p.y += (py-p.y)*.08;
+      const tw = .55 + .45*Math.sin(u*.1+p.tw);
+      dot(p.x, p.y, (0.7+p.s*.8)*tw, VIE_COLS[p.c], .85*tw);
+    }
+  } else if (m === 'disperse') {           /* expansion : tout se dilue */
+    const cx = W/2, cy = H/2;
+    for (const p of SIM.parts) {
+      let dx = p.x-cx, dy = p.y-cy, d = Math.hypot(dx,dy) || 1;
+      p.x += dx/d*(.6+Math.min(u,600)*.004)*p.s; p.y += dy/d*(.6+Math.min(u,600)*.004)*p.s;
+      if (p.x<-10 || p.x>W+10 || p.y<-10 || p.y>H+10) { p.x = cx+(Math.random()-.5)*30; p.y = cy+(Math.random()-.5)*30; }
+      dot(p.x, p.y, .9, '#9fb0d8', Math.max(.06, 1-d/(W*.55))*.7);
+    }
+  } else if (m === 'crunch') {             /* Big Crunch : effondrement */
+    const cx = W/2, cy = H/2, Rb = 16 + 3*Math.sin(u*.25);
+    for (const p of SIM.parts) {
+      p.x += (cx-p.x)*.07; p.y += (cy-p.y)*.07;
+      const d = Math.hypot(p.x-cx, p.y-cy);
+      if (d < Rb) { p.x = cx+(Math.random()-.5)*Rb*2; p.y = cy+(Math.random()-.5)*Rb*1.4; }
+      dot(p.x, p.y, 1, d < Rb*2 ? '#ffb37a' : '#ffe3c9', .8);
+    }
+    dot(cx,cy,Rb*2.2,'#ff5a2a',.12); dot(cx,cy,Rb,'#ff7a3a',.55); dot(cx,cy,Rb*.5,'#fff1d0',.9);
+  } else if (m === 'blackhole') {          /* trous noirs voraces */
+    const wl = SIM_PUITS.map(([fx,fy]) => [fx*W, fy*H]);
+    for (const p of SIM.parts) {
+      const [wx,wy] = wl[p.c%3];
+      let dx = wx-p.x, dy = wy-p.y, d = Math.hypot(dx,dy) || 1;
+      p.x += dx/d*1.1 - dy/d*1.6; p.y += dy/d*1.1 + dx/d*1.6;
+      if (d < 7) { p.x = Math.random()*W; p.y = Math.random()*H; }
+      dot(p.x, p.y, .9, '#c9a6ff', .6);
+    }
+    wl.forEach(([wx,wy]) => {
+      dot(wx,wy,20,'#7a3aff',.1);
+      c.strokeStyle = '#8a5cff'; c.globalAlpha = .7; c.beginPath(); c.arc(wx,wy,11,0,6.29); c.stroke(); c.globalAlpha = 1;
+      dot(wx,wy,9.5,'#000000',1);
+    });
+  } else if (m === 'fog') {                /* brouillard froid, rien ne se forme */
+    for (const p of SIM.parts) {
+      p.x += Math.sin(u*.008+p.tw)*.25 + (Math.random()-.5)*.25;
+      p.y += Math.cos(u*.007+p.tw)*.2  + (Math.random()-.5)*.25;
+      if (p.x<0) p.x+=W; if (p.x>W) p.x-=W; if (p.y<0) p.y+=H; if (p.y>H) p.y-=H;
+      dot(p.x, p.y, 1.1, SIM.tint || '#7a86a8', .16 + .08*Math.sin(u*.03+p.tw));
+    }
+  } else if (m === 'sparks') {             /* etoiles minuscules qui meurent aussitot */
+    for (const p of SIM.parts) {
+      p.life -= .012 * p.s;
+      if (p.life <= 0) { p.life = 1; p.x = Math.random()*W; p.y = Math.random()*H; }
+      if (p.life > .75) { const b = (p.life-.75)/.25; dot(p.x, p.y, 1.5+2*b, '#fff3d8', b); }
+      else if (p.life > .6) dot(p.x, p.y, .8, '#caa26a', (p.life-.6)*2);
+    }
+  } else if (m === 'embers') {             /* l'hydrogene a brule : braises qui s'eteignent */
+    const burn = Math.max(0, 1 - u/90);
+    if (burn > 0) dot(W/2, H/2, 90*(1-burn)+30, '#ff9a3a', burn*.5);
+    for (const p of SIM.parts) {
+      p.y += .15*p.s; p.x += Math.sin(u*.02+p.tw)*.3;
+      if (p.y > H) { p.y = 0; p.x = Math.random()*W; }
+      const fl = .5 + .5*Math.sin(u*.15+p.tw);
+      dot(p.x, p.y, .9, '#ff7a3a', (.08+.25*fl)*(.35+burn));
+    }
+  } else if (m === 'decay') {              /* matiere instable : tout se desintegre */
+    for (const p of SIM.parts) {
+      p.x += (Math.random()-.5)*3.2; p.y += (Math.random()-.5)*3.2;
+      if (p.x<0) p.x+=W; if (p.x>W) p.x-=W; if (p.y<0) p.y+=H; if (p.y>H) p.y-=H;
+      if (Math.random() < .6) dot(p.x, p.y, .9, '#d8c4ff', Math.random()*.7);
+      if (Math.random() < .01) { p.x = Math.random()*W; p.y = Math.random()*H; }
+    }
+  } else if (m === 'dimstars') {           /* des etoiles, mais une chimie morte */
+    for (const p of SIM.parts) {
+      p.x += .05*Math.sin(p.tw);
+      const tw = .4 + .3*Math.sin(u*.05+p.tw);
+      dot(p.x, p.y, .9 + (p.c===0 ? .6 : 0), SIM.tint || '#aab2c4', .35*tw);
+    }
+  }
+}
+
+function openStation(id) {
+  const s = id === 'univers' ? CORE_INFO : STATIONS.find(x => x.id === id);
+  let html = `
+    <button class="close" onclick="closeStation()">✕</button>
+    <span class="tag" style="color:${s.couleur}">${s.cat || (s.phi ? 'Philosophie' : 'Constante fondamentale')}</span>
+    <h2>${s.titre}</h2>
+    <div class="bignum" style="color:${s.couleur}">${s.bignum}</div>
+    ${s.corps}`;
+
+  if (s.slider) {
+    const sl = s.slider;
+    html += `
+    <h3>Faites l'expérience : déréglez la constante</h3>
+    <div class="lab">
+      <canvas id="sim"></canvas>
+      <div class="simcap">Simulation schématique : l'univers que produit ce réglage. Bougez le curseur et observez.</div>
+      <input type="range" id="dial" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.def}">
+      <div class="labrow"><span>${sl.min}</span><span>${sl.unite}</span><span>+${sl.max}</span></div>
+      <div id="dialval" style="margin-top:8px;font-weight:600"></div>
+      <div id="verdict"></div>
+      <button class="resetbtn" onclick="resetDial()">↺ Revenir à la valeur réelle</button>
+    </div>`;
+  }
+  html += `<div class="src"><b>Sources :</b> ${s.sources}</div>`;
+
+  modal.innerHTML = html;
+  overlay.style.display = 'flex';
+  modal.scrollTop = 0;
+
+  if (s.slider) {
+    simInit(document.getElementById('sim'));
+    const dial = document.getElementById('dial');
+    const update = () => {
+      const v = parseFloat(dial.value);
+      const z = s.slider.zone(v);
+      document.getElementById('dialval').textContent = s.slider.fmt(v);
+      const verd = document.getElementById('verdict');
+      verd.textContent = (z.ok ? '✓ ' : '✝ ') + z.msg;
+      verd.className = z.ok ? 'vie' : 'mort';
+      simSet(z.mode || (z.ok ? 'vie' : 'fog'), z.tint);
+      setUniverse(z.ok, z.msg);
+    };
+    dial.addEventListener('input', update);
+    window.resetDial = () => { dial.value = s.slider.def; update(); };
+    update();
+  }
+}
+function closeStation() {
+  overlay.style.display = 'none';
+  simStop();
+  setUniverse(true);
+}
+/* Inclinaison initiale de la camera vers le haut (les look-controls
+   ecrasent l'attribut rotation, on passe par leur pitchObject) */
+(function tiltCam() {
+  const scene = document.querySelector('a-scene');
+  const apply = () => {
+    const lc = document.querySelector('a-camera').components['look-controls'];
+    if (lc && lc.pitchObject) lc.pitchObject.rotation.x = 16 * Math.PI / 180;
+  };
+  if (scene.hasLoaded) apply(); else scene.addEventListener('loaded', apply);
+})();
+
+overlay.addEventListener('click', e => { if (e.target === overlay) closeStation(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeStation(); document.getElementById('intro').style.display = 'none'; }
+});
+</script>
+</body>
+</html>
