@@ -4,34 +4,60 @@
 <meta charset="utf-8">
 <title>Le Réglage Fin de l'Univers — argument interactif</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Exploration interactive 3D de l'argument du réglage fin (fine-tuning) : constantes fondamentales, formulation bayésienne et objections.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <style>
   :root{
     --bg:#05060f; --panel:#0b1022ee; --border:#26304f;
     --txt:#dde3f5; --dim:#8b94b8; --green:#2ee6a8; --red:#ff5470; --gold:#ffd166;
   }
-  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",system-ui,sans-serif;color:var(--txt);}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:"Inter","Segoe UI",system-ui,sans-serif;color:var(--txt);}
   a{color:#7fb2ff;}
+  /* ---------- Ecran de chargement ---------- */
+  #splash{position:fixed;inset:0;z-index:60;background:#04050e;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;gap:18px;transition:opacity .6s;}
+  #splash.done{opacity:0;pointer-events:none;}
+  #splash h1{font-family:"Space Grotesk",sans-serif;font-size:20px;letter-spacing:5px;color:var(--txt);
+             text-transform:uppercase;margin:0;text-align:center;padding:0 20px;}
+  .orbit{width:60px;height:60px;border-radius:50%;border:2px solid #26304f;border-top-color:var(--green);
+         animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* ---------- Vignette cinema ---------- */
+  #vignette{position:fixed;inset:0;z-index:5;pointer-events:none;
+            background:radial-gradient(ellipse at center,transparent 52%,rgba(2,3,8,.6) 100%);}
   /* ---------- HUD ---------- */
   #hud{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;
        justify-content:center;padding:10px 8px;background:linear-gradient(0deg,#05060fd9,transparent);}
-  .chip{border:1px solid var(--border);background:#0b1022cc;color:var(--txt);border-radius:999px;
-        padding:6px 12px;font-size:12.5px;cursor:pointer;transition:.15s;}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:#0b1022cc;
+        color:var(--txt);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;
+        transition:.15s;font-family:inherit;}
   .chip:hover{border-color:#5f74ff;transform:translateY(-2px);}
   .chip.phi{border-color:#a8842f;color:var(--gold);}
+  .chip.active{background:#1a2447;border-color:#7fb2ff;}
+  .chip .dotc{width:7px;height:7px;border-radius:50%;flex:none;}
   #hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:15;font-size:12.5px;
         color:var(--dim);background:#0b1022aa;border:1px solid var(--border);border-radius:8px;padding:5px 12px;}
   /* ---------- Overlays ---------- */
   .overlay{position:fixed;inset:0;z-index:30;background:#020308c9;display:flex;align-items:center;
-           justify-content:center;padding:18px;backdrop-filter:blur(4px);}
+           justify-content:center;padding:18px;backdrop-filter:blur(4px);animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0}}
   .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:760px;
-         width:100%;max-height:88vh;overflow-y:auto;padding:28px 30px;box-shadow:0 20px 80px #000c;position:relative;}
-  .modal h2{margin:0 0 4px;font-size:24px;letter-spacing:.3px;}
+         width:100%;max-height:88vh;overflow-y:auto;padding:28px 30px;box-shadow:0 20px 80px #000c;position:relative;
+         animation:modalIn .3s cubic-bezier(.2,.7,.3,1);border-top:2px solid var(--accent,var(--border));}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98)}}
+  .modal::-webkit-scrollbar{width:10px}
+  .modal::-webkit-scrollbar-thumb{background:#26304f;border-radius:5px}
+  .modal::-webkit-scrollbar-track{background:transparent}
+  .modal h2{margin:0 0 4px;font-size:24px;letter-spacing:.3px;font-family:"Space Grotesk","Inter",sans-serif;}
   .modal h3{margin:20px 0 8px;font-size:15px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;}
   .modal p{line-height:1.6;margin:8px 0;}
   .modal ul{margin:8px 0;padding-left:20px;line-height:1.65;}
   .modal li{margin:4px 0;}
-  .bignum{font-size:34px;font-weight:700;margin:6px 0 2px;}
+  .bignum{font-size:34px;font-weight:700;margin:6px 0 2px;font-family:"Space Grotesk","Inter",sans-serif;}
   .close{position:absolute;top:14px;right:16px;border:none;background:#1a2140;color:var(--txt);
          width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;}
   .close:hover{background:#2a3466;}
@@ -39,7 +65,13 @@
   .tag{display:inline-block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);}
   /* ---------- Slider experiment ---------- */
   .lab{background:#070b1a;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:14px 0;}
-  .lab input[type=range]{width:100%;accent-color:#5f74ff;cursor:pointer;}
+  .lab input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;
+        background:#58202e;outline:none;cursor:pointer;margin:8px 0 2px;}
+  .lab input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;
+        border-radius:50%;background:var(--accent,#5f74ff);border:2px solid #fff;
+        box-shadow:0 0 10px var(--accent,#5f74ff);cursor:grab;}
+  .lab input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+        background:var(--accent,#5f74ff);border:2px solid #fff;cursor:grab;}
   .labrow{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:2px;}
   #verdict{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14.5px;line-height:1.5;
            border:1px solid;transition:.2s;}
@@ -62,9 +94,28 @@
   .bayes{font-family:Georgia,serif;font-size:19px;text-align:center;background:#070b1a;
          border:1px solid var(--border);border-radius:12px;padding:16px;margin:14px 0;}
   kbd{background:#1a2140;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:12px;}
+  /* ---------- Intro ---------- */
+  .gtitle{font-size:32px;margin:2px 0 10px;font-family:"Space Grotesk","Inter",sans-serif;
+          background:linear-gradient(90deg,#2ee6a8,#7fb2ff 45%,#b197fc);
+          -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .statrow{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+  .stat{border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12.5px;
+        color:var(--dim);background:#070b1a;flex:1;min-width:110px;text-align:center;}
+  .stat b{color:var(--txt);display:block;font-size:19px;font-family:"Space Grotesk",sans-serif;}
+  .cta{background:linear-gradient(90deg,#2b3aa0,#5f74ff);border:none;color:#fff;padding:13px 30px;
+       border-radius:10px;font-size:16px;cursor:pointer;box-shadow:0 8px 30px #2b3aa066;
+       font-family:inherit;transition:.15s;}
+  .cta:hover{filter:brightness(1.15);transform:translateY(-1px);}
 </style>
 </head>
 <body>
+
+<div id="splash">
+  <div class="orbit"></div>
+  <h1>Le Réglage Fin de l'Univers</h1>
+  <div style="color:#8b94b8;font-size:13px">chargement de la scène…</div>
+</div>
+<div id="vignette"></div>
 
 <div id="hint">Glissez pour regarder · <kbd>W A S D</kbd>/flèches pour marcher · cliquez une station lumineuse</div>
 
@@ -72,25 +123,29 @@
 
 <!-- ============ INTRO ============ -->
 <div class="overlay" id="intro">
-  <div class="modal">
-    <span class="tag">Exploration interactive</span>
-    <h2 style="font-size:30px">L'Univers réglé au dixième de cheveu</h2>
-    <p>Depuis les années 1970, les physiciens ont découvert un fait troublant : si l'on modifiait,
-    même infimement, la valeur d'une poignée de constantes fondamentales — l'énergie du vide, la force
-    qui soude les noyaux, la masse des particules — l'Univers serait <b>stérile</b> : pas d'étoiles,
-    pas de chimie, pas d'observateurs. C'est le <b>réglage fin</b> (<i>fine-tuning</i>).</p>
-    <p>Imaginez un condamné devant un peloton de <b>cinquante tireurs d'élite</b>. Tous tirent… et tous
-    ratent. « Normal, dit-il, sinon je ne serais pas là pour m'en étonner. » Vraiment ? Ou bien
-    cet événement <i>crie</i> une explication ? C'est l'intuition au cœur de l'argument du réglage fin
-    en faveur de l'existence de Dieu — que vous allez pouvoir tester ici, objections comprises.</p>
-    <p style="color:var(--dim);font-size:14px">Explorez les <b>7 stations</b> de constantes : chacune
-    vous laisse <b>dérégler l'Univers vous-même</b> et en voir les conséquences. Puis visitez les deux
-    stations dorées : <b>l'argument</b> (formulation bayésienne) et <b>les objections</b> avec leurs réponses.
-    Cliquez aussi la <b>sphère centrale</b> pour la fiche de notre Univers.
-    La barre en bas de l'écran permet d'accéder directement à chaque station.</p>
-    <div style="text-align:center;margin-top:18px">
-      <button class="resetbtn" style="font-size:16px;padding:12px 28px;background:#2b3aa0;border-color:#4d5fe0"
-        onclick="document.getElementById('intro').style.display='none'">Entrer dans l'Univers →</button>
+  <div class="modal" style="max-width:680px">
+    <span class="tag">Démonstration interactive</span>
+    <h2 class="gtitle">L'Univers réglé au dixième de cheveu</h2>
+    <p>Une poignée de nombres — l'énergie du vide, la force qui soude les noyaux, la masse des
+    particules — gouvernent tout ce qui existe. <b>Déplacez-les d'un cheveu, et plus rien :</b> ni
+    étoiles, ni chimie, ni observateurs. C'est le <b>réglage fin</b> (<i>fine-tuning</i>), et cette
+    pièce vous laisse manipuler ces constantes vous-même — avant de peser l'explication théiste face
+    à ses objections.</p>
+    <div class="statrow">
+      <div class="stat"><b>7</b>constantes réglées</div>
+      <div class="stat"><b>1</b>argument bayésien</div>
+      <div class="stat"><b>5</b>objections débattues</div>
+      <div class="stat"><b>10<sup>−136</sup></b>probabilité estimée</div>
+    </div>
+    <p>Un condamné fait face à <b>cinquante tireurs d'élite</b>. Tous tirent… tous ratent. Il ne dit
+    pas « normal, sinon je ne serais pas là pour m'en étonner » — il cherche une explication. C'est
+    l'intuition que cette pièce met en scène, objections comprises. À vous de juger si elle tient.</p>
+    <p style="color:var(--dim);font-size:13.5px;line-height:2">
+      <kbd>glisser</kbd> regarder · <kbd>W A S D</kbd>/<kbd>flèches</kbd> se déplacer ·
+      <kbd>clic</kbd> stations lumineuses &amp; sphère centrale · <kbd>Échap</kbd> fermer ·
+      barre du bas : accès direct, son, plein écran</p>
+    <div style="text-align:center;margin-top:20px">
+      <button class="cta" id="enterBtn">Entrer dans l'Univers →</button>
     </div>
   </div>
 </div>
@@ -278,6 +333,47 @@ AFRAME.registerComponent('billboard', {
     if (cam) this.el.object3D.lookAt(cam.getWorldPosition(new THREE.Vector3()));
   }
 });
+
+/* =============================================================
+   Ambiance sonore de synthese (WebAudio, aucun fichier externe)
+============================================================= */
+let AC = null, master = null, sfx = null, audioOn = true;
+function audioInit() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  sfx = AC.createGain(); sfx.gain.value = .5; sfx.connect(master);
+  const padG = AC.createGain(); padG.gain.value = .05;
+  const filt = AC.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 240; filt.Q.value = .7;
+  padG.connect(filt); filt.connect(master);
+  [55, 82.41, 110, 164.81].forEach((f, i) => {
+    const o = AC.createOscillator(); o.type = i % 2 ? 'sine' : 'triangle';
+    o.frequency.value = f; o.detune.value = (i - 1.5) * 4;
+    const g = AC.createGain(); g.gain.value = .5;
+    o.connect(g); g.connect(padG); o.start();
+  });
+  const lfo = AC.createOscillator(); lfo.frequency.value = .06;
+  const lg = AC.createGain(); lg.gain.value = 90;
+  lfo.connect(lg); lg.connect(filt.frequency); lfo.start();
+  if (audioOn) master.gain.linearRampToValueAtTime(.4, AC.currentTime + 3);
+}
+function blip(f, dur, vol, type) {
+  if (!AC || !audioOn) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  o.connect(g); g.connect(sfx); o.start(t); o.stop(t + dur + .02);
+}
+function audioToggle() {
+  audioOn = !audioOn;
+  if (AC) master.gain.linearRampToValueAtTime(audioOn ? .4 : 0, AC.currentTime + .3);
+  const c = document.getElementById('audioChip');
+  if (c) c.textContent = audioOn ? '♪ Son : on' : '♪ Son : off';
+}
+function fsToggle() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+}
 
 /* =============================================================
    Donnees des stations
@@ -533,6 +629,32 @@ const CORE_INFO = {
   sources:'Collaboration Planck (2018) ; M. Rees, <i>Just Six Numbers</i> (1999) ; Stanford Encyclopedia of Philosophy, « Fine-Tuning ».'
 };
 
+/* Fiche references */
+const SOURCES_INFO = {
+  id:'sources', couleur:'#7fb2ff', cat:'Documentation',
+  titre:'Références & lectures', bignum:'Pour aller plus loin',
+  corps:`
+   <p>Les valeurs numériques citées dans les stations proviennent des sources ci-dessous — les trois
+   premières sont librement consultables en ligne.</p>
+   <ul>
+     <li><a href="https://plato.stanford.edu/entries/fine-tuning/" target="_blank" rel="noopener">
+       Stanford Encyclopedia of Philosophy — « Fine-Tuning »</a><br>
+       <span style="color:var(--dim)">L'article de référence : les cas physiques, les formulations de l'argument et les objections.</span></li>
+     <li><a href="https://arxiv.org/html/2012.05617v2" target="_blank" rel="noopener">
+       J. De Vuyst — <i>A Natural Introduction to Fine-Tuning</i> (arXiv, 2020)</a><br>
+       <span style="color:var(--dim)">Introduction pédagogique : Λ, hiérarchie du Higgs, θ<sub>CP</sub>, m<sub>e</sub>/m<sub>p</sub>, constante de structure fine.</span></li>
+     <li><a href="https://quod.lib.umich.edu/e/ergo/12405314.0006.042/--reasonable-little-question-a-formulation-of-the-fine-tuning?rgn=main;view=fulltext" target="_blank" rel="noopener">
+       L. Barnes — « A Reasonable Little Question » (<i>Ergo</i> 6, 2019)</a><br>
+       <span style="color:var(--dim)">La formulation bayésienne rigoureuse : P(univers habitable | naturalisme) ≲ 10<sup>−136</sup>.</span></li>
+     <li>M. Rees — <i>Just Six Numbers</i> (1999) · J. Leslie — <i>Universes</i> (1989) ·
+         R. Penrose — <i>The Emperor's New Mind</i> (1989) · L. Barnes &amp; G. Lewis —
+         <i>A Fortunate Universe</i> (2016).</li>
+   </ul>
+   <p style="font-size:13px;color:var(--dim)">Démonstration pédagogique : les simulations sont
+   schématiques ; les ordres de grandeur et plages citées suivent la littérature académique.</p>`,
+  sources:'Page réalisée avec A-Frame (WebXR) — fonctionne aussi en casque de réalité virtuelle.'
+};
+
 /* =============================================================
    Construction des stations 3D
 ============================================================= */
@@ -584,32 +706,51 @@ STATIONS.forEach((s, i) => {
   holder.appendChild(st);
 
   const hit = st.querySelector('.clickable');
+  const ringEl = st.querySelector('a-ring');
   hit.addEventListener('click', () => openStation(s.id));
-  hit.addEventListener('mouseenter', () => st.setAttribute('scale', '1.06 1.06 1.06'));
-  hit.addEventListener('mouseleave', () => st.setAttribute('scale', '1 1 1'));
+  hit.addEventListener('mouseenter', () => {
+    document.body.style.cursor = 'pointer';
+    st.setAttribute('animation__hov', { property: 'scale', to: '1.06 1.06 1.06', dur: 180, easing: 'easeOutQuad' });
+    ringEl.setAttribute('material', 'emissiveIntensity', 1);
+    blip(950, .04, .05);
+  });
+  hit.addEventListener('mouseleave', () => {
+    document.body.style.cursor = '';
+    st.setAttribute('animation__hov', { property: 'scale', to: '1 1 1', dur: 220, easing: 'easeOutQuad' });
+    ringEl.setAttribute('material', 'emissiveIntensity', .6);
+  });
 });
 
 /* =============================================================
    HUD (acces direct)
 ============================================================= */
 const hud = document.getElementById('hud');
-const coreChip = document.createElement('button');
-coreChip.className = 'chip'; coreChip.style.borderColor = '#2ee6a8';
-coreChip.textContent = '☉ Notre Univers';
-coreChip.onclick = () => openStation('univers');
-hud.appendChild(coreChip);
-document.getElementById('coreSphere').addEventListener('click', () => openStation('univers'));
-STATIONS.forEach(s => {
+const chipReg = {};
+function mkChip(id, label, dotColor, onclick, phi) {
   const b = document.createElement('button');
-  b.className = 'chip' + (s.phi ? ' phi' : '');
-  b.textContent = s.label3d.replace('\n', ' ').toLowerCase().replace(/(^| )\w/g, c => c.toUpperCase());
-  b.onclick = () => openStation(s.id);
-  hud.appendChild(b);
+  b.className = 'chip' + (phi ? ' phi' : '');
+  if (dotColor) {
+    const d = document.createElement('span');
+    d.className = 'dotc'; d.style.background = dotColor;
+    b.appendChild(d);
+  }
+  b.appendChild(document.createTextNode(label));
+  b.onclick = onclick; hud.appendChild(b);
+  if (id) chipReg[id] = b;
+  return b;
+}
+mkChip('univers', 'Notre Univers', '#2ee6a8', () => openStation('univers'));
+STATIONS.forEach(s => {
+  const label = s.label3d.replace('\n', ' ').toLowerCase().replace(/(^| )\w/g, c => c.toUpperCase());
+  mkChip(s.id, label, s.couleur, () => openStation(s.id), s.phi);
 });
-const help = document.createElement('button');
-help.className = 'chip'; help.textContent = '? Aide';
-help.onclick = () => document.getElementById('intro').style.display = 'flex';
-hud.appendChild(help);
+mkChip('sources', 'Références', '#7fb2ff', () => openStation('sources'));
+mkChip(null, '♪ Son : on', null, audioToggle).id = 'audioChip';
+mkChip(null, '⛶ Plein écran', null, fsToggle);
+mkChip(null, '? Aide', null, () => document.getElementById('intro').style.display = 'flex');
+document.getElementById('coreSphere').addEventListener('click', () => openStation('univers'));
+document.getElementById('coreSphere').addEventListener('mouseenter', () => { document.body.style.cursor = 'pointer'; blip(950, .04, .05); });
+document.getElementById('coreSphere').addEventListener('mouseleave', () => { document.body.style.cursor = ''; });
 
 /* =============================================================
    Overlay de station + experience curseur
@@ -750,7 +891,11 @@ function simStep() {
 }
 
 function openStation(id) {
-  const s = id === 'univers' ? CORE_INFO : STATIONS.find(x => x.id === id);
+  const s = id === 'univers' ? CORE_INFO : id === 'sources' ? SOURCES_INFO : STATIONS.find(x => x.id === id);
+  audioInit(); blip(520, .14, .1);
+  Object.values(chipReg).forEach(c => c.classList.remove('active'));
+  if (chipReg[s.id]) chipReg[s.id].classList.add('active');
+  modal.style.setProperty('--accent', s.couleur);
   let html = `
     <button class="close" onclick="closeStation()">✕</button>
     <span class="tag" style="color:${s.couleur}">${s.cat || (s.phi ? 'Philosophie' : 'Constante fondamentale')}</span>
@@ -767,6 +912,7 @@ function openStation(id) {
       <div class="simcap">Simulation schématique : l'univers que produit ce réglage. Bougez le curseur et observez.</div>
       <input type="range" id="dial" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.def}">
       <div class="labrow"><span>${sl.min}</span><span>${sl.unite}</span><span>+${sl.max}</span></div>
+      <div class="simcap">Le trait vert sur la piste marque la zone compatible avec la vie — déjà très exagérée à cette échelle.</div>
       <div id="dialval" style="margin-top:8px;font-weight:600"></div>
       <div id="verdict"></div>
       <button class="resetbtn" onclick="resetDial()">↺ Revenir à la valeur réelle</button>
@@ -781,6 +927,11 @@ function openStation(id) {
   if (s.slider) {
     simInit(document.getElementById('sim'));
     const dial = document.getElementById('dial');
+    /* trait vert = zone vitale, place sur la piste du curseur */
+    const pct = (s.slider.def - s.slider.min) / (s.slider.max - s.slider.min) * 100;
+    const a = Math.max(0, pct - .45).toFixed(2), b = Math.min(100, pct + .45).toFixed(2);
+    dial.style.background = `linear-gradient(90deg,#58202e 0%,#58202e ${a}%,#2ee6a8 ${a}%,#2ee6a8 ${b}%,#58202e ${b}%,#58202e 100%)`;
+    let lastOk = null;
     const update = () => {
       const v = parseFloat(dial.value);
       const z = s.slider.zone(v);
@@ -790,6 +941,10 @@ function openStation(id) {
       verd.className = z.ok ? 'vie' : 'mort';
       simSet(z.mode || (z.ok ? 'vie' : 'fog'), z.tint);
       setUniverse(z.ok, z.msg);
+      if (lastOk !== null && z.ok !== lastOk) {
+        if (z.ok) blip(660, .2, .12); else blip(160, .3, .16, 'triangle');
+      }
+      lastOk = z.ok;
     };
     dial.addEventListener('input', update);
     window.resetDial = () => { dial.value = s.slider.def; update(); };
@@ -800,6 +955,8 @@ function closeStation() {
   overlay.style.display = 'none';
   simStop();
   setUniverse(true);
+  Object.values(chipReg).forEach(c => c.classList.remove('active'));
+  blip(360, .1, .07);
 }
 /* Inclinaison initiale de la camera vers le haut (les look-controls
    ecrasent l'attribut rotation, on passe par leur pitchObject) */
@@ -810,6 +967,18 @@ function closeStation() {
     if (lc && lc.pitchObject) lc.pitchObject.rotation.x = 16 * Math.PI / 180;
   };
   if (scene.hasLoaded) apply(); else scene.addEventListener('loaded', apply);
+})();
+
+/* Entree + ecran de chargement */
+document.getElementById('enterBtn').onclick = () => {
+  document.getElementById('intro').style.display = 'none';
+  audioInit(); blip(660, .15, .1);
+};
+(function splashCtl() {
+  const splash = document.getElementById('splash');
+  const hide = () => setTimeout(() => splash.classList.add('done'), 350);
+  const scene = document.querySelector('a-scene');
+  if (scene.hasLoaded) hide(); else scene.addEventListener('loaded', hide);
 })();
 
 overlay.addEventListener('click', e => { if (e.target === overlay) closeStation(); });
