@@ -10,6 +10,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script>
+  /* si le moteur 3D n'a pas pu être chargé, on le dit au lieu de rester sur l'écran de chargement */
+  if (!window.AFRAME) document.addEventListener('DOMContentLoaded', function () {
+    var s = document.getElementById('splash');
+    s.querySelector('.orbit').style.display = 'none';
+    s.querySelector('div:last-child').textContent =
+      'Impossible de charger le moteur 3D (A-Frame). Vérifiez votre connexion, puis rechargez la page.';
+  });
+</script>
 <style>
   :root{
     --bg:#05060f; --panel:#0b1022ee; --border:#26304f;
@@ -31,8 +40,16 @@
             background:radial-gradient(ellipse at center,transparent 52%,rgba(2,3,8,.6) 100%);}
   /* ---------- HUD ---------- */
   #hud{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;
-       justify-content:center;padding:10px 8px;background:linear-gradient(0deg,#05060fd9,transparent);}
-  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:#0b1022cc;
+       justify-content:center;padding:10px 12px 12px;background:linear-gradient(0deg,#05060fd9,transparent);
+       transition:right .35s;}
+  #topbar{position:fixed;top:10px;left:10px;z-index:20;display:flex;gap:6px;align-items:center;}
+  #progress{font-size:12.5px;color:var(--dim);background:#0b1022cc;border:1px solid var(--border);
+            border-radius:999px;padding:6px 12px;white-space:nowrap;}
+  #progress b{color:var(--green);}
+  .chip.seen .dotc{box-shadow:0 0 0 2px #05060f,0 0 0 3.5px currentColor;}
+  .chip:focus-visible,.cta:focus-visible,.close:focus-visible,.navbtn:focus-visible,.resetbtn:focus-visible{
+        outline:2px solid #7fb2ff;outline-offset:2px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex:none;border:1px solid var(--border);background:#0b1022cc;
         color:var(--txt);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;
         transition:.15s;font-family:inherit;}
   .chip:hover{border-color:#5f74ff;transform:translateY(-2px);}
@@ -40,7 +57,9 @@
   .chip.active{background:#1a2447;border-color:#7fb2ff;}
   .chip .dotc{width:7px;height:7px;border-radius:50%;flex:none;}
   #hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:15;font-size:12.5px;
-        color:var(--dim);background:#0b1022aa;border:1px solid var(--border);border-radius:8px;padding:5px 12px;}
+        color:var(--dim);background:#0b1022aa;border:1px solid var(--border);border-radius:8px;padding:5px 12px;
+        transition:opacity 1s;white-space:nowrap;}
+  #hint.gone{opacity:0;pointer-events:none;}
   /* ---------- Overlays ---------- */
   .overlay{position:fixed;inset:0;z-index:30;background:#020308c9;display:flex;align-items:center;
            justify-content:center;padding:18px;backdrop-filter:blur(4px);animation:fadeIn .25s ease;}
@@ -58,7 +77,41 @@
   .modal ul{margin:8px 0;padding-left:20px;line-height:1.65;}
   .modal li{margin:4px 0;}
   .bignum{font-size:34px;font-weight:700;margin:6px 0 2px;font-family:"Space Grotesk","Inter",sans-serif;}
-  .close{position:absolute;top:14px;right:16px;border:none;background:#1a2140;color:var(--txt);
+  /* ---------- Panneau de station (ancré : la scène reste visible) ---------- */
+  #panelOverlay{position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(540px,100vw);display:none;
+        flex-direction:column;background:var(--panel);border-left:1px solid var(--border);
+        border-top:2px solid var(--accent,var(--border));box-shadow:-20px 0 80px #000a;
+        backdrop-filter:blur(8px);animation:panelIn .35s cubic-bezier(.2,.7,.3,1);}
+  #panelOverlay.open{display:flex;}
+  @keyframes panelIn{from{opacity:0;transform:translateX(30px)}}
+  #panelModal{flex:1;min-height:0;max-width:none;max-height:none;width:auto;background:none;border:none;
+        border-radius:0;box-shadow:none;animation:none;padding:22px 26px 26px;}
+  .pnav{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);
+        background:#070b1acc;}
+  .pnav .pos{flex:1;text-align:center;font-size:12.5px;color:var(--dim);}
+  .navbtn{border:1px solid var(--border);background:#141b38;color:var(--txt);border-radius:8px;
+        padding:8px 14px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .navbtn:hover{background:#1e2750;border-color:#5f74ff;}
+  .navbtn.next{background:linear-gradient(90deg,#2b3aa0,#5f74ff);border-color:transparent;color:#fff;}
+  body.panel-open #hud{right:min(540px,100vw);}
+  body.panel-open #hint{opacity:0;}
+  /* bouton VR d'A-Frame : en haut à droite, masqué quand une fiche est ouverte */
+  .a-enter-vr,.a-enter-ar{top:10px !important;bottom:auto !important;height:34px;}
+  .a-enter-vr{right:12px !important;}
+  body.panel-open .a-enter-vr,body.panel-open .a-enter-ar{display:none;}
+  @media (max-width:820px){
+    #panelOverlay{top:auto;left:0;width:auto;height:62vh;border-left:none;border-radius:16px 16px 0 0;
+          box-shadow:0 -20px 60px #000a;}
+    @keyframes panelIn{from{opacity:0;transform:translateY(30px)}}
+    #panelModal{padding:18px 18px 22px;}
+    body.panel-open #hud{display:none;}
+    #hud{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;}
+    #hud::-webkit-scrollbar{display:none;}
+    #hint{display:none;}
+    .modal{padding:22px 20px;}
+    .gtitle{font-size:26px;}
+  }
+  .close{position:absolute;top:14px;right:16px;z-index:2;border:1px solid var(--border);box-shadow:0 2px 12px #000a;background:#1a2140;color:var(--txt);
          width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;}
   .close:hover{background:#2a3466;}
   .src{font-size:12px;color:var(--dim);border-top:1px solid var(--border);margin-top:22px;padding-top:10px;line-height:1.7;}
@@ -77,11 +130,20 @@
            border:1px solid;transition:.2s;}
   #verdict.vie{border-color:var(--green);color:var(--green);background:#0a2a1f55;}
   #verdict.mort{border-color:var(--red);color:#ffb3c0;background:#33101a66;}
-  .resetbtn{margin-top:10px;border:1px solid var(--border);background:#141b38;color:var(--txt);
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px;margin:10px 0;}
+  .tile{border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--dim);
+        display:flex;justify-content:space-between;gap:6px;background:#0b1022;}
+  .tile.ok{border-color:var(--green);color:var(--green);} .tile.ko{border-color:#7a2a3a;color:#ffb3c0;}
+  .drawstats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .lab label{display:block;font-size:13px;color:var(--dim);margin-top:10px;}
+  .lab label b{color:var(--txt);}
+  .meter{height:12px;border-radius:6px;background:#58202e;overflow:hidden;margin:10px 0 6px;}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,#b8902f,var(--gold));transition:width .2s;}
+  .resetbtn{font-family:inherit;margin-right:6px;margin-top:10px;border:1px solid var(--border);background:#141b38;color:var(--txt);
             border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px;}
   .resetbtn:hover{background:#1e2750;}
   /* ---------- Simulation d'univers ---------- */
-  #sim{width:100%;height:220px;display:block;border-radius:10px;background:#01030c;
+  #sim{width:100%;height:190px;display:block;border-radius:10px;background:#01030c;
        border:1px solid #1a2140;margin-bottom:4px;}
   .simcap{font-size:12px;color:var(--dim);margin:4px 0 12px;}
   /* ---------- Accordion (objections) ---------- */
@@ -117,24 +179,25 @@
 </div>
 <div id="vignette"></div>
 
+<div id="topbar"><span id="progress"></span></div>
 <div id="hint">Glissez pour regarder · <kbd>W A S D</kbd>/flèches pour marcher · cliquez une station lumineuse</div>
 
 <div id="hud"></div>
 
 <!-- ============ INTRO ============ -->
-<div class="overlay" id="intro">
+<div class="overlay" id="intro" role="dialog" aria-modal="true" aria-label="Introduction">
   <div class="modal" style="max-width:680px">
     <span class="tag">Démonstration interactive</span>
-    <h2 class="gtitle">L'Univers réglé au dixième de cheveu</h2>
+    <h2 class="gtitle">Un Univers réglé à un cheveu près</h2>
     <p>Une poignée de nombres — l'énergie du vide, la force qui soude les noyaux, la masse des
     particules — gouvernent tout ce qui existe. <b>Déplacez-les d'un cheveu, et plus rien :</b> ni
     étoiles, ni chimie, ni observateurs. C'est le <b>réglage fin</b> (<i>fine-tuning</i>), et cette
-    pièce vous laisse manipuler ces constantes vous-même — avant de peser l'explication théiste face
-    à ses objections.</p>
+    pièce vous laisse manipuler ces constantes vous-même, tirer des univers au hasard, puis peser
+    l'explication théiste face à ses objections — avec votre propre calcul bayésien.</p>
     <div class="statrow">
       <div class="stat"><b>7</b>constantes réglées</div>
       <div class="stat"><b>1</b>argument bayésien</div>
-      <div class="stat"><b>5</b>objections débattues</div>
+      <div class="stat"><b>7</b>objections débattues</div>
       <div class="stat"><b>10<sup>−136</sup></b>probabilité estimée</div>
     </div>
     <p>Un condamné fait face à <b>cinquante tireurs d'élite</b>. Tous tirent… tous ratent. Il ne dit
@@ -142,18 +205,25 @@
     l'intuition que cette pièce met en scène, objections comprises. À vous de juger si elle tient.</p>
     <p style="color:var(--dim);font-size:13.5px;line-height:2">
       <kbd>glisser</kbd> regarder · <kbd>W A S D</kbd>/<kbd>flèches</kbd> se déplacer ·
-      <kbd>clic</kbd> stations lumineuses &amp; sphère centrale · <kbd>Échap</kbd> fermer ·
-      barre du bas : accès direct, son, plein écran</p>
-    <div style="text-align:center;margin-top:20px">
-      <button class="cta" id="enterBtn">Entrer dans l'Univers →</button>
+      <kbd>clic</kbd> ou <kbd>toucher</kbd> une station ou la sphère centrale · <kbd>Échap</kbd> fermer ·
+      barre du bas : accès direct à chaque étape</p>
+    <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="cta" id="enterBtn">Visite guidée →</button>
+      <button class="navbtn" id="freeBtn">Explorer librement</button>
     </div>
   </div>
 </div>
 
 <!-- ============ STATION OVERLAY ============ -->
-<div class="overlay" id="panelOverlay" style="display:none">
+<aside id="panelOverlay" role="dialog" aria-label="Fiche de la station">
+  <button class="close" onclick="closeStation()" aria-label="Fermer">✕</button>
   <div class="modal" id="panelModal"></div>
-</div>
+  <div class="pnav">
+    <button class="navbtn" id="prevBtn">← Précédent</button>
+    <span class="pos" id="navPos"></span>
+    <button class="navbtn next" id="nextBtn">Suivant →</button>
+  </div>
+</aside>
 
 <!-- ============ SCENE ============ -->
 <a-scene background="color: #05060f" fog="type: exponential; color: #060812; density: 0.03"
@@ -202,17 +272,25 @@
 
   <a-entity id="stations"></a-entity>
 
-  <a-entity id="rig" position="0 0 3.4">
-    <a-camera wasd-controls="acceleration: 22" look-controls="pointerLockEnabled: false"></a-camera>
+  <a-entity id="rig">
+    <a-camera position="0 1.6 5" wasd-controls="acceleration: 22" look-controls="pointerLockEnabled: false"></a-camera>
   </a-entity>
 
-  <a-entity id="mainTitle" position="0 5.7 0" billboard></a-entity>
+  <a-entity id="mainTitle" position="0 5.2 0" billboard></a-entity>
 </a-scene>
 
 <script>
 /* =============================================================
    Composants A-Frame
 ============================================================= */
+/* sprite rond et doux pour tous les nuages de points (au lieu de carrés) */
+const DOT_TEX = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const c = cv.getContext('2d'), g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.35, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(cv);
+})();
 AFRAME.registerComponent('starfield', {
   init: function () {
     const mk = (N, size, spread) => {
@@ -229,7 +307,7 @@ AFRAME.registerComponent('starfield', {
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
       return new THREE.Points(geo, new THREE.PointsMaterial({
-        size, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: .95, fog: false }));
+        size: size*1.5, map: DOT_TEX, depthWrite: false, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: .95, fog: false }));
     };
     this.el.setObject3D('points',  mk(1600, .5, 110));
     this.el.setObject3D('points2', mk(500, 1.1, 120));
@@ -268,7 +346,7 @@ AFRAME.registerComponent('dust', {
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     this.el.setObject3D('points', new THREE.Points(geo, new THREE.PointsMaterial({
-      color: 0x8fa3ff, size: .05, transparent: true, opacity: .45 })));
+      color: 0x8fa3ff, size: .09, map: DOT_TEX, depthWrite: false, transparent: true, opacity: .5 })));
   }
 });
 AFRAME.registerComponent('universe-surface', {
@@ -323,7 +401,7 @@ AFRAME.registerComponent('core-swarm', {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
     this.el.setObject3D('points', new THREE.Points(geo, new THREE.PointsMaterial({
-      size: .03, vertexColors: true, transparent: true, opacity: .85 })));
+      size: .055, map: DOT_TEX, depthWrite: false, vertexColors: true, transparent: true, opacity: .9 })));
   }
 });
 AFRAME.registerComponent('billboard', {
@@ -377,7 +455,9 @@ function fsToggle() {
 /* =============================================================
    Donnees des stations
 ============================================================= */
-const fmtSigne = v => (v > 0 ? '+' + v : '' + v);
+const fmtSigne = v => (v > 0 ? '+' + v : ('' + v).replace('-', '−')).replace('.', ',');
+const fmtFacteur = v => { const f = Math.pow(10, v);
+  return (f >= 100 ? Math.round(f) : +f.toPrecision(2)).toLocaleString('fr-FR', { maximumSignificantDigits: 3 }); };
 
 const STATIONS = [
 {
@@ -394,7 +474,7 @@ const STATIONS = [
    et positive : la matière est dispersée avant de pouvoir s'agréger. Négative : l'Univers se
    recontracte en Big Crunch quasi immédiat. C'est l'exemple de réglage fin le plus cité de toute la
    littérature.</p>`,
-  slider:{ min:-120, max:120, step:1, def:0, unite:'ordres de grandeur d\'écart',
+  slider:{ min:-120, max:120, step:1, def:0, unite:'ordres de grandeur d\'écart', bornes:['÷ 10¹²⁰','× 10¹²⁰'],
     fmt:v=>`Écart : ${fmtSigne(v)} ordre(s) de grandeur`,
     zone:v=> Math.abs(v)<=1
       ? {ok:true,  mode:'vie',      msg:'Λ est dans la fenêtre : les galaxies se forment, les étoiles s\'allument, la vie est possible.'}
@@ -415,7 +495,7 @@ const STATIONS = [
    Ce nombre est si grand qu'on ne peut même pas l'écrire : il faudrait plus de zéros qu'il n'y a de
    particules dans l'univers observable (~10<sup>80</sup>). C'est, de très loin, le réglage le plus
    extrême connu.</p>`,
-  slider:{ min:0, max:100, step:1, def:0, unite:'désordre initial (échelle arbitraire)',
+  slider:{ min:0, max:100, step:1, def:0, unite:'désordre initial (échelle arbitraire)', bornes:['ordre parfait','chaos'],
     fmt:v=>`Désordre initial : ${v} / 100`,
     zone:v=> v<1
       ? {ok:true,  mode:'vie',       msg:'Univers primordial quasi parfaitement lisse : la gravité peut sculpter lentement des galaxies. La flèche du temps fonctionne.'}
@@ -435,7 +515,7 @@ const STATIONS = [
    <b>quelques dixièmes de pour cent</b> : les étoiles produisent de l'oxygène sans carbone, ou du
    carbone sans oxygène. Décalez-la de ±50 % : soit tout l'hydrogène brûle dès le Big Bang (plus
    d'eau, plus de Soleil), soit la nucléosynthèse stellaire s'effondre entièrement.</p>`,
-  slider:{ min:-50, max:50, step:0.5, def:0, unite:'variation en %',
+  slider:{ min:-50, max:50, step:0.5, def:0, unite:'variation en %', bornes:['−50 %','+50 %'],
     fmt:v=>`Variation : ${fmtSigne(v)} %`,
     zone:v=>{const a=Math.abs(v);
       return a<=0.5 ? {ok:true,  mode:'vie',      msg:'Résonance de Hoyle en place : les étoiles fabriquent carbone ET oxygène. La chimie de la vie est ouverte.'}
@@ -457,8 +537,8 @@ const STATIONS = [
    <b>s'annuler mutuellement sur 34 décimales</b> pour donner le résultat mesuré. C'est le « problème
    de la hiérarchie », l'une des motivations principales de la physique au-delà du Modèle standard.
    Multipliez la valeur du champ par quelques unités seulement : plus aucun atome complexe stable.</p>`,
-  slider:{ min:-3, max:3, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
-    fmt:v=>`Champ de Higgs : × ${Math.pow(10,v).toPrecision(2)}`,
+  slider:{ min:-3, max:3, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)', bornes:['÷ 1 000','× 1 000'],
+    fmt:v=>`Champ de Higgs : × ${fmtFacteur(v)}`,
     zone:v=> Math.abs(v)<=0.3
       ? {ok:true,  mode:'vie',   msg:'Masses de l\'électron et des quarks dans la bonne fenêtre : atomes stables, liaisons chimiques riches.'}
       : v>0.3 ? {ok:false, mode:'decay', msg:'Particules trop massives : les noyaux complexes se désintègrent, plus d\'atomes stables au-delà des plus légers. Aucune chimie.'}
@@ -477,8 +557,8 @@ const STATIONS = [
    s'éteignent en quelques millions d'années — bien trop court pour qu'une évolution biologique ait
    lieu sur une planète voisine. Légèrement plus faible : la matière ne se comprime jamais assez pour
    allumer la fusion. Aucune étoile, aucun élément lourd, aucune planète.</p>`,
-  slider:{ min:-6, max:6, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
-    fmt:v=>`Gravité : × ${Math.pow(10,v).toPrecision(2)}`,
+  slider:{ min:-6, max:6, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)', bornes:['÷ 1 000 000','× 1 000 000'],
+    fmt:v=>`Gravité : × ${fmtFacteur(v)}`,
     zone:v=> Math.abs(v)<=1
       ? {ok:true,  mode:'vie',    msg:'Des étoiles comme le Soleil brûlent paisiblement pendant des milliards d\'années : le temps nécessaire à l\'évolution.'}
       : v>1 ? {ok:false, mode:'sparks', msg:'Étoiles naines éphémères : elles s\'éteignent en quelques millions d\'années. Les planètes n\'ont jamais le temps d\'abriter une biosphère.'}
@@ -497,8 +577,8 @@ const STATIONS = [
    condense pas, aucune galaxie ni étoile ne se forme. Multipliez-le par dix : la matière s'effondre
    en trous noirs supermassifs et l'univers baigne dans un rayonnement violent, hostile à toute
    chimie complexe.</p>`,
-  slider:{ min:-2, max:2, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)',
-    fmt:v=>`Q : × ${Math.pow(10,v).toPrecision(2)}`,
+  slider:{ min:-2, max:2, step:0.1, def:0, unite:'facteur multiplicatif (échelle log)', bornes:['÷ 100','× 100'],
+    fmt:v=>`Q : × ${fmtFacteur(v)}`,
     zone:v=> Math.abs(v)<=1
       ? {ok:true,  mode:'vie',       msg:'Les grumeaux grandissent en galaxies majestueuses, sans excès : notre univers structuré et calme.'}
       : v>1 ? {ok:false, mode:'blackhole', msg:'Effondrement violent : trous noirs supermassifs et déluges de rayonnement. Aucun havre pour la chimie du vivant.'}
@@ -518,7 +598,7 @@ const STATIONS = [
    nucléosynthèse s'arrête, l'univers reste de l'hydrogène pur. Allégez-le (ou alourdissez le up) :
    le proton devient plus lourd que le neutron et <b>l'hydrogène lui-même se désintègre</b> — univers
    de neutrons, sans atomes, sans chimie, sans rien.</p>`,
-  slider:{ min:-50, max:50, step:1, def:0, unite:'variation de la masse du quark down (%)',
+  slider:{ min:-50, max:50, step:1, def:0, unite:'variation de la masse du quark down (%)', bornes:['−50 %','+50 %'],
     fmt:v=>`Quark down : ${fmtSigne(v)} %`,
     zone:v=> Math.abs(v)<=2
       ? {ok:true,  mode:'vie', msg:'Protons stables, neutrons juste assez lourds : le tableau périodique complet est possible.'}
@@ -549,9 +629,24 @@ const STATIONS = [
    </div>
    <p style="font-size:14px;color:var(--dim)">Le facteur doré — le rapport de vraisemblance — est
    gigantesque (jusqu'à ~10<sup>136</sup>). L'argument ne prétend pas <i>prouver</i> Dieu : il affirme
-   que le réglage fin est une <b>évidence massive</b> en faveur du théisme, que chacun doit ensuite
-   combiner avec ses probabilités a priori et le reste de ce qu'il sait.</p>
-   <h3>Pourquoi « pas si vite, ce n'est pas du hasard » ne suffit pas</h3>
+   que le réglage fin est un <b>indice de très grand poids</b> en faveur du théisme, que chacun doit
+   ensuite combiner avec ses probabilités a priori et le reste de ce qu'il sait.</p>
+   <h3>Faites le calcul vous-même</h3>
+   <div class="lab">
+     <label>Votre a priori pour le théisme, avant d'examiner le réglage fin : <b id="bkv"></b></label>
+     <input type="range" id="bk" min="0" max="150" step="1" value="9">
+     <div class="labrow"><span>indécis (50/50)</span><span>scepticisme extrême</span></div>
+     <label>Poids que vous accordez au réglage fin, objections comprises : <b id="bbv"></b></label>
+     <input type="range" id="bb" min="0" max="136" step="1" value="136">
+     <div class="labrow"><span>aucun (les objections l'annulent)</span><span>estimation de Barnes</span></div>
+     <div class="meter"><i id="bbar"></i></div>
+     <div id="bres" style="font-weight:600"></div>
+     <div class="simcap" id="bnote" style="margin:6px 0 0"></div>
+   </div>
+   <p style="font-size:14px;color:var(--dim)">Le calcul ne tranche pas à votre place : il montre où
+   se joue le désaccord. Qui juge le multivers plausible, ou les probabilités mal définies, baissera
+   le second curseur ; les objections de la station suivante servent précisément à décider où le placer.</p>
+   <h3>« Les constantes sont ce qu'elles sont, voilà tout »</h3>
    <p>L'objection « les constantes ne sont pas tirées au sort, elles sont juste ce qu'elles sont »
    revient à refuser de s'étonner devant le peloton d'exécution qui rate cinquante fois. En
    épistémologie bayésienne, une hypothèse qui rend une observation attendue est confirmée face à une
@@ -560,8 +655,8 @@ const STATIONS = [
 },
 {
   id:'objections', phi:true, couleur:'#ffd166', titreCourt:'Objections & réponses', tag3d:'l\'autre côté de la balance',
-  numParts:[{t:'5 débats'}],
-  titre:'Les objections — et leurs réponses', bignum:'5 débats classiques',
+  numParts:[{t:'7 débats'}],
+  titre:'Les objections — et leurs réponses', bignum:'7 débats classiques',
   corps:`
    <details open><summary>1 · Le multivers</summary><div class="body">
      <p><span class="obj"><b>Objection.</b></span> S'il existe une immensité d'univers aux constantes
@@ -603,7 +698,27 @@ const STATIONS = [
      physique doté de paramètres numériques susceptibles de « réglage » : la question serait mal posée.
      Et méthodologiquement, une explication peut être bonne sans qu'on explique l'explication (on
      accepte une théorie physique sans exiger d'abord sa méta-théorie). Le débat reste ouvert — c'est
-     l'une des discussions les plus vivantes de la philosophie de la religion contemporaine.</p></div></details>`,
+     l'une des discussions les plus vivantes de la philosophie de la religion contemporaine.</p></div></details>
+   <details><summary>6 · Un univers presque entièrement hostile à la vie</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> L'Univers est un vide glacial ou brûlant, mortel
+     presque partout. S'il était « réglé pour la vie », pourquoi tant d'espace stérile ?</p>
+     <p><span class="rep"><b>Réponse.</b></span> L'argument porte sur le fait que la vie soit
+     <i>possible</i>, non sur son abondance. Et la taille de l'Univers n'est pas un gaspillage : il
+     faut des milliards d'années d'étoiles pour forger le carbone et l'oxygène, et un univers en
+     expansion aussi vieux est nécessairement immense.</p></div></details>
+   <details><summary>7 · D'autres formes de vie seraient possibles</summary><div class="body">
+     <p><span class="obj"><b>Objection.</b></span> Nous ne connaissons que la vie carbonée. Avec
+     d'autres constantes, une vie tout à fait différente aurait pu apparaître : le réglage ne serait
+     qu'un manque d'imagination.</p>
+     <p><span class="rep"><b>Réponse.</b></span> Les univers déréglés ne sont pas des univers
+     « différents mais riches » : ce sont, pour la plupart, de l'hydrogène dilué, des trous noirs ou
+     un effondrement en quelques instants. Sans atomes stables, sans étoiles, sans durée, il n'y a
+     aucune structure complexe — quelle que soit la définition de la vie retenue. L'objection garde
+     toutefois une part de vérité : personne ne sait calculer tout ce qu'une autre physique
+     permettrait.</p></div></details>
+   <p style="font-size:14px;color:var(--dim)">Aucune de ces réponses ne clôt le débat : des
+   philosophes et physiciens sérieux se trouvent des deux côtés. Retournez à la station
+   « L'argument » et réglez le second curseur selon ce qui vous a convaincu.</p>`,
   sources:'Stanford Encyclopedia of Philosophy, « Fine-Tuning » (objections) ; J. Leslie, <i>Universes</i> (1989) ; R. White (2000) ; T. & L. McGrew, E. Vestrup (2001) ; L. Barnes, <i>Ergo</i> (2019).'
 }
 ];
@@ -616,6 +731,22 @@ const CORE_INFO = {
    <p><b>La cible.</b> Cette sphère représente ce que produisent, <i>ensemble</i>, les réglages des
    sept stations qui l'entourent : un univers structuré, chimiquement riche et assez durable pour
    engendrer des observateurs. Déréglez n'importe quelle station et regardez-la s'éteindre.</p>
+   <h3>Tirez un univers au hasard</h3>
+   <div class="lab">
+     <p style="margin:0 0 4px;font-size:14px">Chaque tirage choisit au hasard une position sur les
+     sept curseurs des stations. L'univers n'est habitable que si <b>les sept</b> tombent dans leur
+     fenêtre.</p>
+     <div class="tiles" id="tiles"></div>
+     <div id="verdict" class="vie" style="display:none"></div>
+     <button class="resetbtn" id="draw1">🎲 Tirer un univers</button>
+     <button class="resetbtn" id="drawN">Tirer 100 000 univers</button>
+     <div class="drawstats">
+       <div class="stat"><b id="dN">0</b>univers tirés</div>
+       <div class="stat"><b id="dH">0</b>habitables</div>
+       <div class="stat"><b id="dB">–</b>meilleur tirage</div>
+     </div>
+     <div class="simcap" id="drawnote" style="margin:10px 0 0"></div>
+   </div>
    <h3>Fiche d'identité</h3>
    <ul>
      <li><b>Âge :</b> 13,8 milliards d'années ; univers observable de ~93 milliards d'années-lumière de diamètre.</li>
@@ -780,14 +911,16 @@ function drawTitleCanvas(cv) {
   c.textAlign = 'center'; c.letterSpacing = '9px';
   const grad = c.createLinearGradient(W * .18, 0, W * .82, 0);
   grad.addColorStop(0, '#2ee6a8'); grad.addColorStop(.5, '#7fb2ff'); grad.addColorStop(1, '#b197fc');
-  c.font = '700 62px "Space Grotesk","Inter",sans-serif';
+  /* la taille s'adapte pour que le titre tienne quelle que soit la police effectivement chargée */
+  let fs = 62; const T = 'LE RÉGLAGE FIN DE L\'UNIVERS';
+  do { c.font = `700 ${fs}px "Space Grotesk","Inter",sans-serif`; } while (c.measureText(T).width > W - 70 && --fs > 30);
   c.shadowColor = 'rgba(110,140,255,.85)'; c.shadowBlur = 30;
   c.fillStyle = grad;
   c.fillText('LE RÉGLAGE FIN DE L\'UNIVERS', W / 2, 140);
   c.shadowBlur = 0;
   c.letterSpacing = '5px';
   c.font = '500 23px "Inter",sans-serif'; c.fillStyle = 'rgba(152,162,200,.95)';
-  c.fillText('7 CONSTANTES  ·  1 ARGUMENT  ·  5 OBJECTIONS', W / 2, 205);
+  c.fillText('7 CONSTANTES  ·  1 ARGUMENT  ·  7 OBJECTIONS', W / 2, 205);
   c.letterSpacing = '0px';
 }
 function makeTitleTexture() {
@@ -900,9 +1033,95 @@ STATIONS.forEach(s => {
   mkChip(s.id, s.titreCourt, s.couleur, () => openStation(s.id), s.phi);
 });
 mkChip('sources', 'Références', '#7fb2ff', () => openStation('sources'));
-mkChip(null, '♪ Son : on', null, audioToggle).id = 'audioChip';
-mkChip(null, '⛶ Plein écran', null, fsToggle);
-mkChip(null, '? Aide', null, () => document.getElementById('intro').style.display = 'flex');
+(function tools() {
+  const bar = document.getElementById('topbar'), keep = hud;
+  const tool = (label, title, fn) => { const b = mkChip(null, label, null, fn); b.title = title; bar.appendChild(b); return b; };
+  tool('♪ Son : on', 'Couper ou rétablir le son', audioToggle).id = 'audioChip';
+  if (document.documentElement.requestFullscreen) tool('⛶', 'Plein écran', fsToggle).setAttribute('aria-label', 'Plein écran');
+  tool('?', 'Aide', () => document.getElementById('intro').style.display = 'flex').setAttribute('aria-label', 'Aide');
+})();
+
+/* ---------- visite guidée : ordre, progression ---------- */
+const TOUR = ['univers', ...STATIONS.map(s => s.id), 'sources'];
+const A_VOIR = TOUR.filter(id => id !== 'sources');
+let visited = new Set(), currentId = null;
+try { visited = new Set(JSON.parse(localStorage.getItem('rf-vus') || '[]').filter(id => A_VOIR.includes(id))); } catch (e) {}
+function markVisited(id) {
+  if (id && A_VOIR.includes(id)) visited.add(id);
+  try { localStorage.setItem('rf-vus', JSON.stringify([...visited])); } catch (e) {}
+  A_VOIR.forEach(k => chipReg[k].classList.toggle('seen', visited.has(k)));
+  document.getElementById('progress').innerHTML = visited.size === A_VOIR.length
+    ? '<b>✓ Tout exploré</b>' : `<b>${visited.size}</b> / ${A_VOIR.length} explorées`;
+}
+markVisited(null);
+function tourStep(d) {
+  const i = TOUR.indexOf(currentId) + d;
+  if (i >= 0 && i < TOUR.length) openStation(TOUR[i]);
+}
+document.getElementById('prevBtn').onclick = () => tourStep(-1);
+document.getElementById('nextBtn').onclick = () => tourStep(1);
+
+/* ---------- caméra : vol vers un point de vue + décentrage sous le panneau ---------- */
+const sceneEl = document.querySelector('a-scene'), camEl = document.querySelector('a-camera');
+const STAND = 5, PITCH = 9 * Math.PI / 180;
+let fly = null, shift = { cur: 0, to: 0 };
+const panelIsSheet = () => window.matchMedia('(max-width:820px)').matches;
+function applyShift() {
+  const cam = sceneEl.camera; if (!cam || !cam.isPerspectiveCamera || sceneEl.is('vr-mode')) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (shift.cur < .5) { if (cam.view) cam.clearViewOffset(); return; }
+  if (panelIsSheet()) cam.setViewOffset(W, H, 0, shift.cur, W, H);
+  else cam.setViewOffset(W, H, shift.cur, 0, W, H);
+}
+function setShift(open) {
+  const el = document.getElementById('panelOverlay');
+  shift.to = !open ? 0 : panelIsSheet() ? el.offsetHeight / 2 : el.offsetWidth / 2;
+  if (!fly) fly = { hold: true, t0: performance.now(), dur: 700 };
+  runFly();
+}
+function flyTo(id) {
+  const lc = camEl.components['look-controls'];
+  if (!lc || !lc.yawObject || sceneEl.is('vr-mode')) return;
+  const p = camEl.object3D.position, i = STATIONS.findIndex(s => s.id === id);
+  let cx, cz, tx = 0, tz = 0;
+  if (i >= 0) {            /* face au cœur, la station choisie visible juste à côté, derrière lui */
+    const a = (i / STATIONS.length) * Math.PI * 2 - Math.PI / 2, b = a + Math.PI - .6;
+    cx = Math.cos(b) * STAND; cz = Math.sin(b) * STAND;
+    tx = Math.cos(a) * 1.5; tz = Math.sin(a) * 1.5;
+  } else {                 /* fiche centrale : on recule simplement face au cœur */
+    const d = Math.hypot(p.x, p.z);
+    cx = d < .5 ? 0 : p.x / d * STAND; cz = d < .5 ? STAND : p.z / d * STAND;
+  }
+  const from = { x: p.x, z: p.z, yaw: lc.yawObject.rotation.y, pitch: lc.pitchObject.rotation.x };
+  let yaw = Math.atan2(cx - tx, cz - tz), dy = yaw - from.yaw;
+  dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  fly = { from, to: { x: cx, z: cz, yaw: from.yaw + dy, pitch: PITCH }, t0: performance.now(), dur: 1500 };
+  runFly();
+}
+let flyRaf = 0;
+function runFly() {
+  cancelAnimationFrame(flyRaf);
+  (function step() {
+    if (!fly) return;
+    const k = Math.min(1, (performance.now() - fly.t0) / fly.dur), e = k < .5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2) / 2;
+    if (!fly.hold) {
+      const lc = camEl.components['look-controls'], f = fly.from, t = fly.to, p = camEl.object3D.position;
+      p.x = f.x + (t.x - f.x) * e; p.z = f.z + (t.z - f.z) * e;
+      lc.yawObject.rotation.y = f.yaw + (t.yaw - f.yaw) * e;
+      lc.pitchObject.rotation.x = f.pitch + (t.pitch - f.pitch) * e;
+    }
+    shift.cur += (shift.to - shift.cur) * Math.min(1, .12 + k * k);
+    applyShift();
+    if (k >= 1) { shift.cur = shift.to; applyShift(); fly = null; return; }
+    flyRaf = requestAnimationFrame(step);
+  })();
+}
+/* l'utilisateur reprend la main : on interrompt le vol (pas le décentrage) */
+['mousedown', 'touchstart', 'wheel'].forEach(ev => sceneEl.addEventListener(ev, () => { if (fly) fly.hold = true; }, { passive: true }));
+window.addEventListener('keydown', e => { if (fly && /^(Arrow|Key[WASD])/.test(e.code)) fly.hold = true; });
+window.addEventListener('resize', () => { if (document.body.classList.contains('panel-open')) setShift(true); else applyShift(); });
+sceneEl.addEventListener('enter-vr', () => { const c = sceneEl.camera; if (c && c.view) c.clearViewOffset(); });
+sceneEl.addEventListener('exit-vr', applyShift);
 document.getElementById('coreSphere').addEventListener('click', () => openStation('univers'));
 document.getElementById('coreSphere').addEventListener('mouseenter', () => { document.body.style.cursor = 'pointer'; blip(950, .04, .05); });
 document.getElementById('coreSphere').addEventListener('mouseleave', () => { document.body.style.cursor = ''; });
@@ -930,7 +1149,7 @@ function setUniverse(ok, msg) {
 /* =============================================================
    Simulation d'univers (canvas) — reagit au curseur
 ============================================================= */
-const SIM = {c:null,x:null,parts:[],mode:'vie',tint:null,raf:0,t:0,W:0,H:220};
+const SIM = {c:null,x:null,parts:[],mode:'vie',tint:null,raf:0,t:0,W:0,H:190};
 const SIM_CENTRES = [[.25,.35],[.7,.28],[.45,.72],[.82,.7]];   // galaxies
 const SIM_PUITS   = [[.3,.4],[.72,.35],[.5,.75]];              // trous noirs
 const VIE_COLS = ['#cfe0ff','#ffe9c9','#9fd8ff','#ffd9f0'];
@@ -947,7 +1166,7 @@ function simSet(mode, tint) { if (mode !== SIM.mode) { SIM.mode = mode; SIM.t = 
 function simInit(canvas) {
   SIM.c = canvas; SIM.x = canvas.getContext('2d');
   SIM.W = canvas.width = Math.max(200, Math.round(canvas.getBoundingClientRect().width));
-  SIM.H = canvas.height = 220;
+  SIM.H = canvas.height = 190;
   simSeed(); SIM.t = 0;
   cancelAnimationFrame(SIM.raf);
   (function loop(){ simStep(); SIM.raf = requestAnimationFrame(loop); })();
@@ -1047,12 +1266,18 @@ function simStep() {
 
 function openStation(id) {
   const s = id === 'univers' ? CORE_INFO : id === 'sources' ? SOURCES_INFO : STATIONS.find(x => x.id === id);
+  if (!s) return;
   audioInit(); blip(520, .14, .1);
+  simStop(); setUniverse(true);
+  currentId = s.id; markVisited(s.id);
+  const ti = TOUR.indexOf(s.id);
+  document.getElementById('navPos').textContent = `Étape ${ti + 1} / ${TOUR.length}`;
+  document.getElementById('prevBtn').style.visibility = ti > 0 ? '' : 'hidden';
+  document.getElementById('nextBtn').style.visibility = ti < TOUR.length - 1 ? '' : 'hidden';
   Object.values(chipReg).forEach(c => c.classList.remove('active'));
   if (chipReg[s.id]) chipReg[s.id].classList.add('active');
-  modal.style.setProperty('--accent', s.couleur);
+  overlay.style.setProperty('--accent', s.couleur);
   let html = `
-    <button class="close" onclick="closeStation()">✕</button>
     <span class="tag" style="color:${s.couleur}">${s.cat || (s.phi ? 'Philosophie' : 'Constante fondamentale')}</span>
     <h2>${s.titre}</h2>
     <div class="bignum" style="color:${s.couleur}">${s.bignum}</div>
@@ -1066,7 +1291,7 @@ function openStation(id) {
       <canvas id="sim"></canvas>
       <div class="simcap">Simulation schématique : l'univers que produit ce réglage. Bougez le curseur et observez.</div>
       <input type="range" id="dial" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.def}">
-      <div class="labrow"><span>${sl.min}</span><span>${sl.unite}</span><span>+${sl.max}</span></div>
+      <div class="labrow"><span>${sl.bornes[0]}</span><span>${sl.unite}</span><span>${sl.bornes[1]}</span></div>
       <div class="simcap">Le trait vert sur la piste marque la zone compatible avec la vie — déjà très exagérée à cette échelle.</div>
       <div id="dialval" style="margin-top:8px;font-weight:600"></div>
       <div id="verdict"></div>
@@ -1076,8 +1301,13 @@ function openStation(id) {
   html += `<div class="src"><b>Sources :</b> ${s.sources}</div>`;
 
   modal.innerHTML = html;
-  overlay.style.display = 'flex';
+  overlay.classList.add('open');
+  document.body.classList.add('panel-open');
   modal.scrollTop = 0;
+  chipReg[s.id].scrollIntoView({ block: 'nearest', inline: 'center' });
+  flyTo(s.id); setShift(true);
+  if (s.id === 'argument') initBayes();
+  if (s.id === 'univers') initDraw();
 
   /* accordeon exclusif : ouvrir une objection ferme les autres */
   const dets = modal.querySelectorAll('details');
@@ -1098,7 +1328,7 @@ function openStation(id) {
       const z = s.slider.zone(v);
       document.getElementById('dialval').textContent = s.slider.fmt(v);
       const verd = document.getElementById('verdict');
-      verd.textContent = (z.ok ? '✓ ' : '✝ ') + z.msg;
+      verd.textContent = (z.ok ? '✓ ' : '✗ ') + z.msg;
       verd.className = z.ok ? 'vie' : 'mort';
       simSet(z.mode || (z.ok ? 'vie' : 'fog'), z.tint);
       setUniverse(z.ok, z.msg);
@@ -1113,19 +1343,88 @@ function openStation(id) {
   }
 }
 function closeStation() {
-  overlay.style.display = 'none';
+  if (!overlay.classList.contains('open')) return;
+  overlay.classList.remove('open');
+  document.body.classList.remove('panel-open');
+  currentId = null; setShift(false);
   simStop();
   setUniverse(true);
   Object.values(chipReg).forEach(c => c.classList.remove('active'));
   blip(360, .1, .07);
 }
+/* =============================================================
+   Calculateur bayésien (station « L'argument »)
+============================================================= */
+const puiss = n => `10<sup>${('' + n).replace('-', '−')}</sup>`;
+function initBayes() {
+  const $ = id => document.getElementById(id), k = $('bk'), b = $('bb');
+  const upd = () => {
+    const K = +k.value, B = +b.value, L = B - K, p = 1 / (1 + Math.pow(10, -L));
+    $('bkv').innerHTML = K === 0 ? '1 chance sur 2' : `environ 1 chance sur ${puiss(K)}`;
+    $('bbv').innerHTML = B === 0 ? '× 1 (aucun)' : `facteur ${puiss(B)}`;
+    let txt;
+    if (L >= 9) txt = `certitude à ${puiss(-L)} près`;
+    else if (L <= -9) txt = `environ 1 chance sur ${puiss(-L)}`;
+    else { const pc = p * 100;
+      txt = (pc < 1 ? pc.toPrecision(2) : pc > 99 ? pc.toFixed(Math.max(1, Math.ceil(L) - 1)) : pc.toFixed(1)).replace('.', ',') + ' %'; }
+    $('bres').innerHTML = `Probabilité du théisme après coup : <span style="color:var(--gold)">${txt}</span>`;
+    $('bbar').style.width = Math.max(.5, p * 100) + '%';
+    $('bnote').innerHTML = L >= 2 ? 'Avec ces réglages, le théisme sort très largement confirmé.'
+      : L > -2 ? 'Zone d\'équilibre : ici, l\'a priori et le réglage fin se neutralisent à peu près.'
+      : `Le naturalisme reste largement favori : pour basculer, il faudrait accorder au réglage fin un facteur d\'au moins ${puiss(K)}.`;
+  };
+  k.addEventListener('input', upd); b.addEventListener('input', upd); upd();
+}
+
+/* =============================================================
+   Tirage d'univers au hasard (fiche « Notre Univers »)
+============================================================= */
+const DIALS = STATIONS.filter(s => s.slider);
+const dialSlots = sl => Math.round((sl.max - sl.min) / sl.step) + 1;
+const dialVal = (sl, i) => Math.round((sl.min + i * sl.step) * 1000) / 1000;
+const DIAL_OK = DIALS.map(s => { const n = dialSlots(s.slider), a = [];
+  for (let i = 0; i < n; i++) a.push(s.slider.zone(dialVal(s.slider, i)).ok); return a; });
+const P_HASARD = DIAL_OK.reduce((p, a) => p * a.filter(Boolean).length / a.length, 1);
+const DRAW = { n: 0, h: 0, best: -1 };
+const grand = n => n >= 1e9 ? (n / 1e9).toFixed(1).replace('.', ',') + ' milliard' + (n >= 2e9 ? 's' : '')
+                              : Math.round(n / 1e6) + ' millions';
+function drawOnce() {
+  const res = DIAL_OK.map(a => a[(Math.random() * a.length) | 0]);
+  const good = res.filter(Boolean).length;
+  DRAW.n++; if (good === DIALS.length) DRAW.h++; if (good > DRAW.best) DRAW.best = good;
+  return res;
+}
+function initDraw() {
+  const $ = id => document.getElementById(id), fr = n => n.toLocaleString('fr-FR');
+  const tiles = $('tiles');
+  const show = res => {
+    tiles.innerHTML = DIALS.map((s, i) => `<div class="tile ${res ? (res[i] ? 'ok' : 'ko') : ''}">
+      <span>${s.titreCourt}</span><span>${res ? (res[i] ? '✓' : '✗') : '·'}</span></div>`).join('');
+    $('dN').textContent = fr(DRAW.n); $('dH').textContent = fr(DRAW.h);
+    $('dB').textContent = DRAW.best < 0 ? '–' : `${DRAW.best} / ${DIALS.length}`;
+    if (!res) return;
+    const good = res.filter(Boolean).length, ok = good === DIALS.length, v = $('verdict');
+    v.style.display = ''; v.className = ok ? 'vie' : 'mort';
+    v.textContent = ok ? '✓ Incroyable : un univers habitable !'
+      : `✗ Univers stérile : ${good} constante${good > 1 ? 's' : ''} sur ${DIALS.length} dans la bonne fenêtre.`;
+    setUniverse(ok);
+    if (ok) blip(880, .5, .15); else blip(160, .25, .12, 'triangle');
+  };
+  $('drawnote').innerHTML = `Même à l'échelle des curseurs — où les fenêtres sont immensément
+    élargies pour rester visibles — il faut en moyenne <b>${grand(1 / P_HASARD)} de tirages</b>
+    pour obtenir un seul univers habitable. Aux échelles réelles, l'estimation de Barnes est d'un sur ${puiss(136)}.`;
+  $('draw1').onclick = () => show(drawOnce());
+  $('drawN').onclick = () => { let r; for (let i = 0; i < 100000; i++) r = drawOnce(); show(r); };
+  show(null);
+}
+
 /* Inclinaison initiale de la camera vers le haut (les look-controls
    ecrasent l'attribut rotation, on passe par leur pitchObject) */
 (function tiltCam() {
   const scene = document.querySelector('a-scene');
   const apply = () => {
     const lc = document.querySelector('a-camera').components['look-controls'];
-    if (lc && lc.pitchObject) lc.pitchObject.rotation.x = 16 * Math.PI / 180;
+    if (lc && lc.pitchObject) lc.pitchObject.rotation.x = 12 * Math.PI / 180;
   };
   if (scene.hasLoaded) apply(); else scene.addEventListener('loaded', apply);
 })();
@@ -1135,15 +1434,19 @@ function closeStation() {
   const t = document.getElementById('mainTitle');
   const tex = makeTitleTexture();
   onLoaded(t, () => t.setObject3D('mesh', new THREE.Mesh(
-    new THREE.PlaneGeometry(11, 2.75),
+    new THREE.PlaneGeometry(8.4, 2.1),
     new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false }))));
 })();
 
 /* Entree + ecran de chargement */
-document.getElementById('enterBtn').onclick = () => {
+function enter(tour) {
   document.getElementById('intro').style.display = 'none';
   audioInit(); blip(660, .15, .1);
-};
+  setTimeout(() => document.getElementById('hint').classList.add('gone'), 12000);
+  if (tour && !currentId) openStation(TOUR[0]);
+}
+document.getElementById('enterBtn').onclick = () => enter(true);
+document.getElementById('freeBtn').onclick = () => enter(false);
 (function splashCtl() {
   const splash = document.getElementById('splash');
   const hide = () => setTimeout(() => splash.classList.add('done'), 350);
@@ -1151,7 +1454,6 @@ document.getElementById('enterBtn').onclick = () => {
   if (scene.hasLoaded) hide(); else scene.addEventListener('loaded', hide);
 })();
 
-overlay.addEventListener('click', e => { if (e.target === overlay) closeStation(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeStation(); document.getElementById('intro').style.display = 'none'; }
 });
